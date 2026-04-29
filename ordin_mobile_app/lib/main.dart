@@ -4,7 +4,10 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'screens/today_screen.dart';
 import 'screens/tasks_screen.dart';
 import 'screens/habits_screen.dart';
+import 'screens/more_screen.dart';
+import 'screens/goals_screen.dart';
 import 'theme/app_theme.dart';
+import 'data/hive_storage_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,7 +20,10 @@ void main() async {
     ),
   );
   
-  await Hive.initFlutter();
+  // Initialize Hive storage
+  final storage = HiveStorageService();
+  await storage.init();
+  
   runApp(const MyApp());
 }
 
@@ -45,10 +51,11 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    TodayScreen(),
-    TasksScreen(),
-    HabitsScreen(),
+  final List<Widget> _screens = [
+    const TodayScreen(),
+    const TasksScreen(),
+    const HabitsScreen(),
+    const MoreScreen(),
   ];
 
   @override
@@ -71,6 +78,7 @@ class _MainScreenState extends State<MainScreen> {
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: (index) => setState(() => _currentIndex = index),
+          type: BottomNavigationBarType.fixed,
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.home_rounded),
@@ -86,6 +94,11 @@ class _MainScreenState extends State<MainScreen> {
               icon: Icon(Icons.auto_awesome_rounded),
               activeIcon: Icon(Icons.auto_awesome_rounded),
               label: 'Habits',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.apps_rounded),
+              activeIcon: Icon(Icons.apps_rounded),
+              label: 'More',
             ),
           ],
         ),

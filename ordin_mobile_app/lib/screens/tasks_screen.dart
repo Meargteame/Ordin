@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../models/task.dart';
+import '../models/goal.dart';
 import '../data/task_repository.dart';
+import '../data/goal_repository.dart';
 import '../data/hive_storage_service.dart';
 import '../widgets/task_item.dart';
 import '../theme/app_theme.dart';
@@ -15,8 +17,10 @@ class TasksScreen extends StatefulWidget {
 
 class _TasksScreenState extends State<TasksScreen> {
   late TaskRepository _taskRepository;
+  late GoalRepository _goalRepository;
   late HiveStorageService _storageService;
   List<Task> _tasks = [];
+  List<Goal> _goals = [];
   bool _isLoading = true;
 
   @override
@@ -30,12 +34,24 @@ class _TasksScreenState extends State<TasksScreen> {
       _storageService = HiveStorageService();
       await _storageService.init();
       _taskRepository = TaskRepository(_storageService);
+      _goalRepository = GoalRepository();
+      await _goalRepository.init(_storageService);
       await _loadTasks();
+      await _loadGoals();
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
         _showSnackBar('Failed to initialize storage', isError: true);
       }
+    }
+  }
+
+  Future<void> _loadGoals() async {
+    try {
+      final goals = await _goalRepository.getActiveGoals();
+      setState(() => _goals = goals);
+    } catch (e) {
+      // Silent fail for goals
     }
   }
 
@@ -68,113 +84,168 @@ class _TasksScreenState extends State<TasksScreen> {
 
   Future<void> _showCreateTaskDialog() async {
     final titleController = TextEditingController();
+    final descController = TextEditingController();
+    final selectedGoals = <String>{};
     
     return showDialog(
       context: context,
       builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+        return StatefulBuilder(
+          builder: (context, setDialogState) => Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.add_task_rounded,
-                        color: AppTheme.primaryColor,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'New Task',
-                      style: AppTheme.heading3,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                TextField(
-                  controller: titleController,
-                  autofocus: true,
-                  decoration: InputDecoration(
-                    hintText: 'What needs to be done?',
-                    hintStyle: AppTheme.bodyMedium,
-                    filled: true,
-                    fillColor: AppTheme.backgroundColor,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.all(16),
-                  ),
-                  textCapitalization: TextCapitalization.sentences,
-                  maxLines: 3,
-                  minLines: 1,
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppTheme.textSecondary,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      ),
-                      child: const Text('Cancel'),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () async {
-                        final title = titleController.text.trim();
-                        
-                        if (title.isEmpty) {
-                          _showSnackBar('Task title cannot be empty', isError: true);
-                          return;
-                        }
-                        
-                        final newTask = Task(
-                          id: const Uuid().v4(),
-                          title: title,
-                          isDone: false,
-                          date: DateTime.now(),
-                        );
-                        
-                        try {
-                          await _taskRepository.saveTask(newTask);
-                          await _loadTasks();
-                          if (context.mounted) {
-                            Navigator.of(context).pop();
-                            _showSnackBar('Task created successfully');
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            _showSnackBar('Failed to save task', isError: true);
-                          }
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.add_task_rounded,
+                            color: AppTheme.primaryColor,
+                            size: 24,
+                          ),
                         ),
+                        const SizedBox(width: 12),
+                        const Text('New Task', style: AppTheme.heading3),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    TextField(
+                      controller: titleController,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: 'What needs to be done?',
+                        hintStyle: AppTheme.bodyMedium,
+                        filled: true,
+                        fillColor: AppTheme.backgroundColor,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.all(16),
                       ),
-                      child: const Text('Create'),
+                      textCapitalization: TextCapitalization.sentences,
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: descController,
+                      decoration: InputDecoration(
+                        hintText: 'Description (optional)',
+                        hintStyle: AppTheme.bodyMedium,
+                        filled: true,
+                        fillColor: AppTheme.backgroundColor,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.all(16),
+                      ),
+                      maxLines: 2,
+                    ),
+                    if (_goals.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      const Text('Link to Goals', style: AppTheme.bodyMedium),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _goals.map((goal) {
+                          final isSelected = selectedGoals.contains(goal.id);
+                          return FilterChip(
+                            label: Text(goal.title),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              setDialogState(() {
+                                if (selected) {
+                                  selectedGoals.add(goal.id);
+                                } else {
+                                  selectedGoals.remove(goal.id);
+                                }
+                              });
+                            },
+                            backgroundColor: AppTheme.cardColor,
+                            selectedColor: AppTheme.primaryColor.withOpacity(0.2),
+                            labelStyle: TextStyle(
+                              color: isSelected ? AppTheme.primaryColor : AppTheme.textPrimary,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppTheme.textSecondary,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          ),
+                          child: const Text('Cancel'),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () async {
+                            final title = titleController.text.trim();
+                            
+                            if (title.isEmpty) {
+                              _showSnackBar('Task title cannot be empty', isError: true);
+                              return;
+                            }
+                            
+                            final newTask = Task(
+                              id: const Uuid().v4(),
+                              title: title,
+                              isDone: false,
+                              date: DateTime.now(),
+                              description: descController.text.trim().isEmpty ? null : descController.text.trim(),
+                              goalIds: selectedGoals.toList(),
+                            );
+                            
+                            try {
+                              await _taskRepository.saveTask(newTask);
+                              
+                              // Update goal progress for linked goals
+                              for (final goalId in selectedGoals) {
+                                await _goalRepository.updateGoalProgress(goalId);
+                              }
+                              
+                              await _loadTasks();
+                              if (context.mounted) {
+                                Navigator.of(context).pop();
+                                _showSnackBar('Task created successfully');
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                _showSnackBar('Failed to save task', isError: true);
+                              }
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text('Create'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
         );

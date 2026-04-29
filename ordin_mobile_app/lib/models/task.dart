@@ -3,13 +3,21 @@ class Task {
   final String title;
   bool isDone;
   final DateTime date;
+  String? projectId;
+  List<String> goalIds;
+  String? description;
+  int? estimatedMinutes;
 
   Task({
     required this.id,
     required this.title,
     required this.isDone,
     required this.date,
-  });
+    this.projectId,
+    List<String>? goalIds,
+    this.description,
+    this.estimatedMinutes,
+  }) : goalIds = goalIds ?? [];
 
   Map<String, dynamic> toJson() {
     return {
@@ -17,6 +25,10 @@ class Task {
       'title': title,
       'isDone': isDone,
       'date': date.toIso8601String(),
+      'projectId': projectId,
+      'goalIds': goalIds,
+      'description': description,
+      'estimatedMinutes': estimatedMinutes,
     };
   }
 
@@ -26,6 +38,10 @@ class Task {
       title: json['title'],
       isDone: json['isDone'],
       date: DateTime.parse(json['date']),
+      projectId: json['projectId'],
+      goalIds: json['goalIds'] != null ? List<String>.from(json['goalIds']) : [],
+      description: json['description'],
+      estimatedMinutes: json['estimatedMinutes'],
     );
   }
 

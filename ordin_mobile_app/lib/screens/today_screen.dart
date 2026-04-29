@@ -4,6 +4,7 @@ import '../models/habit.dart';
 import '../data/task_repository.dart';
 import '../data/habit_repository.dart';
 import '../data/hive_storage_service.dart';
+import '../services/analytics_engine.dart';
 import '../widgets/task_item.dart';
 import '../widgets/habit_item.dart';
 import '../widgets/focus_text_field.dart';
@@ -20,9 +21,11 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   late TaskRepository _taskRepository;
   late HabitRepository _habitRepository;
   late HiveStorageService _storageService;
+  late AnalyticsEngine _analyticsEngine;
   List<Task> _todayTasks = [];
   List<Habit> _habits = [];
   String _focusText = '';
+  double _productivityScore = 0.0;
   bool _isLoading = true;
 
   @override
@@ -60,6 +63,8 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
       await _storageService.init();
       _taskRepository = TaskRepository(_storageService);
       _habitRepository = HabitRepository(_storageService);
+      _analyticsEngine = AnalyticsEngine();
+      await _analyticsEngine.init(_storageService);
       await _checkAndResetDaily();
       await _loadData();
     } catch (e) {
@@ -85,11 +90,13 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
       final todayTasks = allTasks.where((task) => task.isScheduledFor(now)).toList();
       final habits = await _habitRepository.loadHabits();
       final focusText = await _storageService.getString('focus_text') ?? '';
+      final productivityScore = await _analyticsEngine.calculateProductivityScore(now);
       
       setState(() {
         _todayTasks = todayTasks;
         _habits = habits;
         _focusText = focusText;
+        _productivityScore = productivityScore;
         _isLoading = false;
       });
     } catch (e) {
@@ -193,6 +200,56 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     return 'Good evening';
   }
 
+  Widget _buildQuickActionCard(
+    BuildContext context,
+    String label,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: color, size: 24),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  label,
+                  style: AppTheme.bodyMedium.copyWith(fontSize: 13),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final completedTasks = _todayTasks.where((t) => t.isDone).length;
@@ -220,13 +277,50 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
                       style: AppTheme.heading1,
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      totalItems == 0
-                          ? 'You have nothing planned for today'
-                          : completedItems == totalItems
-                              ? '🎉 All done for today!'
-                              : 'You have $totalItems ${totalItems == 1 ? 'item' : 'items'} today',
-                      style: AppTheme.bodyMedium,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            totalItems == 0
+                                ? 'You have nothing planned for today'
+                                : completedItems == totalItems
+                                    ? '🎉 All done for today!'
+                                    : 'You have $totalItems ${totalItems == 1 ? 'item' : 'items'} today',
+                            style: AppTheme.bodyMedium,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppTheme.primaryColor,
+                                AppTheme.secondaryColor,
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.local_fire_department_rounded,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${(_productivityScore * 100).toInt()}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 24),
 
@@ -285,6 +379,58 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
                       ),
                       const SizedBox(height: 24),
                     ],
+                    
+                    // Quick Actions
+                    const Text('Quick Actions', style: AppTheme.heading3),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildQuickActionCard(
+                            context,
+                            'Add Task',
+                            Icons.add_task_rounded,
+                            AppTheme.primaryColor,
+                            () => Navigator.pushNamed(context, '/tasks'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildQuickActionCard(
+                            context,
+                            'Start Timer',
+                            Icons.timer_rounded,
+                            AppTheme.warningColor,
+                            () => Navigator.pushNamed(context, '/time-tracking'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildQuickActionCard(
+                            context,
+                            'Journal',
+                            Icons.book_rounded,
+                            AppTheme.successColor,
+                            () => Navigator.pushNamed(context, '/journal'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildQuickActionCard(
+                            context,
+                            'Analytics',
+                            Icons.bar_chart_rounded,
+                            AppTheme.mediumPriority,
+                            () => Navigator.pushNamed(context, '/analytics'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
                     
                     // Focus text field
                     FocusTextField(
