@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../widgets/gradient_app_bar.dart';
 import 'goals_screen.dart';
 import 'projects_screen.dart';
 import 'time_tracking_screen.dart';
@@ -11,6 +12,7 @@ import 'health_screen.dart';
 import 'finance_screen.dart';
 import 'relationships_screen.dart';
 import 'learning_screen.dart';
+import 'settings_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -19,17 +21,8 @@ class MoreScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: Text('More', style: AppTheme.displayMedium),
-        backgroundColor: AppTheme.surfaceWhite,
-        elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(
-            height: 1,
-            color: AppTheme.borderGray,
-          ),
-        ),
+      appBar: GradientAppBar(
+        title: 'More',
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
@@ -149,7 +142,7 @@ class MoreScreen extends StatelessWidget {
             'Customize your experience',
             Icons.settings_rounded,
             AppTheme.textSecondary,
-            () => _showComingSoon(context, 'Settings'),
+            () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
           ),
           const SizedBox(height: 12),
           _buildFeatureCard(
@@ -158,7 +151,7 @@ class MoreScreen extends StatelessWidget {
             'Backup your information',
             Icons.download_rounded,
             AppTheme.textSecondary,
-            () => _showComingSoon(context, 'Export'),
+            () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
           ),
         ],
       ),

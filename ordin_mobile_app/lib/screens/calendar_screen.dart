@@ -6,6 +6,7 @@ import '../models/task.dart';
 import '../data/calendar_repository.dart';
 import '../data/hive_storage_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/gradient_app_bar.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -234,14 +235,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: Text('Calendar', style: AppTheme.displayMedium),
-        backgroundColor: AppTheme.surfaceWhite,
-        elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: AppTheme.borderGray),
-        ),
+      appBar: GradientAppBar(
+        title: 'Calendar',
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -272,6 +267,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
               ],
             ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'calendar_fab',
         onPressed: _addTimeBlock,
         backgroundColor: AppTheme.successGreen,
         icon: const Icon(Icons.add_rounded, color: Colors.white),

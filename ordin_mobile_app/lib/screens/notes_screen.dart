@@ -5,6 +5,7 @@ import '../models/note.dart';
 import '../data/notes_repository.dart';
 import '../data/hive_storage_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/gradient_app_bar.dart';
 
 class NotesScreen extends StatefulWidget {
   const NotesScreen({super.key});
@@ -170,14 +171,8 @@ class _NotesScreenState extends State<NotesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: Text('Notes', style: AppTheme.displayMedium),
-        backgroundColor: AppTheme.surfaceWhite,
-        elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: AppTheme.borderGray),
-        ),
+      appBar: GradientAppBar(
+        title: 'Notes',
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -196,6 +191,7 @@ class _NotesScreenState extends State<NotesScreen> {
               ],
             ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'notes_fab',
         onPressed: () => _addOrEditNote(),
         backgroundColor: AppTheme.primaryBlue,
         icon: const Icon(Icons.add_rounded, color: Colors.white),

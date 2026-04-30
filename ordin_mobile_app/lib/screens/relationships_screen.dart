@@ -5,6 +5,7 @@ import '../models/contact.dart';
 import '../data/life_areas_repository.dart';
 import '../data/hive_storage_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/gradient_app_bar.dart';
 
 class RelationshipsScreen extends StatefulWidget {
   const RelationshipsScreen({super.key});
@@ -123,6 +124,17 @@ class _RelationshipsScreenState extends State<RelationshipsScreen> {
     contact.lastInteraction = DateTime.now();
     await _repo.saveContact(contact);
     await _loadData();
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Interaction logged', style: AppTheme.bodyMedium.copyWith(color: Colors.white)),
+          backgroundColor: AppTheme.successGreen,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    }
   }
 
   Future<void> _deleteContact(Contact contact) async {
@@ -130,18 +142,22 @@ class _RelationshipsScreenState extends State<RelationshipsScreen> {
     await _loadData();
   }
 
+  String _getLastInteractionText(DateTime? lastInteraction) {
+    if (lastInteraction == null) return 'Never';
+    final days = DateTime.now().difference(lastInteraction).inDays;
+    if (days == 0) return 'Today';
+    if (days == 1) return 'Yesterday';
+    if (days < 7) return '$days days ago';
+    if (days < 30) return '${(days / 7).floor()} weeks ago';
+    return '${(days / 30).floor()} months ago';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: Text('Relationships', style: AppTheme.displayMedium),
-        backgroundColor: AppTheme.surfaceWhite,
-        elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: AppTheme.borderGray),
-        ),
+      appBar: GradientAppBar(
+        title: 'Relationships',
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -153,6 +169,7 @@ class _RelationshipsScreenState extends State<RelationshipsScreen> {
                   itemBuilder: (context, index) => _buildContactCard(_contacts[index]),
                 ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'relationships_fab',
         onPressed: () => _addOrEditContact(),
         backgroundColor: AppTheme.warningOrange,
         icon: const Icon(Icons.add_rounded, color: Colors.white),
@@ -164,84 +181,104 @@ class _RelationshipsScreenState extends State<RelationshipsScreen> {
   Widget _buildContactCard(Contact contact) {
     final daysSinceInteraction = contact.lastInteraction != null
         ? DateTime.now().difference(contact.lastInteraction!).inDays
-        : null;
+        : 999;
+    final needsAttention = daysSinceInteraction > 30;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: AppTheme.surfaceWhite,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.borderGray),
+        border: Border.all(
+          color: needsAttention ? AppTheme.warningOrange.withOpacity(0.3) : AppTheme.borderGray,
+          width: needsAttention ? 2 : 1,
+        ),
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _addOrEditContact(contact),
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: AppTheme.warningOrange.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          contact.name[0].toUpperCase(),
-                          style: AppTheme.headingLarge.copyWith(color: AppTheme.warningOrange),
-                        ),
-                      ),
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppTheme.warningOrange.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      contact.name[0].toUpperCase(),
+                      style: AppTheme.headingLarge.copyWith(color: AppTheme.warningOrange),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(contact.name, style: AppTheme.headingMedium),
+                      const SizedBox(height: 4),
+                      Row(
                         children: [
-                          Text(contact.name, style: AppTheme.headingMedium),
-                          if (daysSinceInteraction != null) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              'Last contact: $daysSinceInteraction days ago',
-                              style: AppTheme.bodySmall.copyWith(
-                                color: daysSinceInteraction > 30 ? AppTheme.dangerRed : AppTheme.textTertiary,
-                              ),
+                          Icon(Icons.access_time_rounded, size: 14, color: AppTheme.textTertiary),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Last: ${_getLastInteractionText(contact.lastInteraction)}',
+                            style: AppTheme.bodySmall.copyWith(
+                              color: needsAttention ? AppTheme.warningOrange : AppTheme.textTertiary,
                             ),
-                          ] else
-                            Text('No interactions yet', style: AppTheme.bodySmall),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuButton(
+                  icon: const Icon(Icons.more_vert_rounded),
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      onTap: () => Future.delayed(Duration.zero, () => _addOrEditContact(contact)),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.edit_rounded, size: 20),
+                          const SizedBox(width: 12),
+                          Text('Edit', style: AppTheme.bodyMedium),
                         ],
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline_rounded, color: AppTheme.dangerRed),
-                      onPressed: () => _deleteContact(contact),
+                    PopupMenuItem(
+                      onTap: () => _logInteraction(contact),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.check_circle_rounded, size: 20, color: AppTheme.successGreen),
+                          const SizedBox(width: 12),
+                          Text('Log Interaction', style: AppTheme.bodyMedium),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      onTap: () => _deleteContact(contact),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.delete_rounded, size: 20, color: AppTheme.dangerRed),
+                          const SizedBox(width: 12),
+                          Text('Delete', style: AppTheme.bodyMedium.copyWith(color: AppTheme.dangerRed)),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-                if (contact.notes.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Text(contact.notes, style: AppTheme.bodyMedium),
-                ],
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: () => _logInteraction(contact),
-                  icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
-                  label: Text('Log Interaction', style: AppTheme.labelMedium),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppTheme.warningOrange,
-                    side: const BorderSide(color: AppTheme.warningOrange),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                ),
               ],
             ),
-          ),
+            if (contact.notes.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(contact.notes, style: AppTheme.bodyMedium),
+            ],
+          ],
         ),
       ),
     );

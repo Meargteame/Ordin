@@ -5,6 +5,7 @@ import '../models/health_metric.dart';
 import '../data/life_areas_repository.dart';
 import '../data/hive_storage_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/gradient_app_bar.dart';
 
 class HealthScreen extends StatefulWidget {
   const HealthScreen({super.key});
@@ -40,7 +41,7 @@ class _HealthScreenState extends State<HealthScreen> {
   }
 
   Future<void> _addMetric() async {
-    HealthMetricType? selectedType;
+    HealthMetricType? type;
     final valueController = TextEditingController();
     final notesController = TextEditingController();
 
@@ -54,19 +55,19 @@ class _HealthScreenState extends State<HealthScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<HealthMetricType>(
-                  value: selectedType,
+                  value: type,
                   decoration: InputDecoration(
                     labelText: 'Type',
                     labelStyle: AppTheme.labelMedium,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  items: HealthMetricType.values.map((type) {
+                  items: HealthMetricType.values.map((t) {
                     return DropdownMenuItem(
-                      value: type,
-                      child: Text(_getTypeName(type), style: AppTheme.bodyLarge),
+                      value: t,
+                      child: Text(_metricName(t), style: AppTheme.bodyLarge),
                     );
                   }).toList(),
-                  onChanged: (value) => setDialogState(() => selectedType = value),
+                  onChanged: (value) => setDialogState(() => type = value),
                 ),
                 const SizedBox(height: 16),
                 TextField(
@@ -76,7 +77,7 @@ class _HealthScreenState extends State<HealthScreen> {
                   decoration: InputDecoration(
                     labelText: 'Value',
                     labelStyle: AppTheme.labelMedium,
-                    hintText: 'e.g., 8 (hours), 2000 (ml), 70 (kg)',
+                    hintText: type != null ? _metricHint(type!) : 'Enter value',
                     hintStyle: AppTheme.bodyMedium,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     focusedBorder: OutlineInputBorder(
@@ -121,11 +122,11 @@ class _HealthScreenState extends State<HealthScreen> {
       ),
     );
 
-    if (result == true && selectedType != null && valueController.text.isNotEmpty) {
+    if (result == true && type != null && valueController.text.isNotEmpty) {
       final metric = HealthMetric(
         id: const Uuid().v4(),
         date: DateTime.now(),
-        type: selectedType!,
+        type: type!,
         value: double.parse(valueController.text),
         notes: notesController.text.isEmpty ? null : notesController.text,
       );
@@ -134,7 +135,7 @@ class _HealthScreenState extends State<HealthScreen> {
     }
   }
 
-  String _getTypeName(HealthMetricType type) {
+  String _metricName(HealthMetricType type) {
     switch (type) {
       case HealthMetricType.workout:
         return 'Workout';
@@ -149,12 +150,27 @@ class _HealthScreenState extends State<HealthScreen> {
     }
   }
 
-  String _getUnit(HealthMetricType type) {
+  String _metricHint(HealthMetricType type) {
+    switch (type) {
+      case HealthMetricType.workout:
+        return 'Minutes';
+      case HealthMetricType.waterIntake:
+        return 'Glasses';
+      case HealthMetricType.sleep:
+        return 'Hours';
+      case HealthMetricType.weight:
+        return 'kg';
+      case HealthMetricType.meals:
+        return 'Count';
+    }
+  }
+
+  String _metricUnit(HealthMetricType type) {
     switch (type) {
       case HealthMetricType.workout:
         return 'min';
       case HealthMetricType.waterIntake:
-        return 'ml';
+        return 'glasses';
       case HealthMetricType.sleep:
         return 'hrs';
       case HealthMetricType.weight:
@@ -164,7 +180,7 @@ class _HealthScreenState extends State<HealthScreen> {
     }
   }
 
-  IconData _getIcon(HealthMetricType type) {
+  IconData _metricIcon(HealthMetricType type) {
     switch (type) {
       case HealthMetricType.workout:
         return Icons.fitness_center_rounded;
@@ -183,14 +199,8 @@ class _HealthScreenState extends State<HealthScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: Text('Health', style: AppTheme.displayMedium),
-        backgroundColor: AppTheme.surfaceWhite,
-        elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: AppTheme.borderGray),
-        ),
+      appBar: GradientAppBar(
+        title: 'Health',
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -202,6 +212,7 @@ class _HealthScreenState extends State<HealthScreen> {
                   itemBuilder: (context, index) => _buildMetricCard(_metrics[index]),
                 ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'health_fab',
         onPressed: _addMetric,
         backgroundColor: AppTheme.successGreen,
         icon: const Icon(Icons.add_rounded, color: Colors.white),
@@ -227,17 +238,17 @@ class _HealthScreenState extends State<HealthScreen> {
               color: AppTheme.successGreen.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(_getIcon(metric.type), color: AppTheme.successGreen, size: 24),
+            child: Icon(_metricIcon(metric.type), color: AppTheme.successGreen, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_getTypeName(metric.type), style: AppTheme.headingMedium),
+                Text(_metricName(metric.type), style: AppTheme.headingMedium),
                 const SizedBox(height: 4),
                 Text(
-                  DateFormat('MMM d, yyyy • h:mm a').format(metric.date),
+                  DateFormat('MMM d, h:mm a').format(metric.date),
                   style: AppTheme.bodySmall,
                 ),
                 if (metric.notes != null) ...[
@@ -248,7 +259,7 @@ class _HealthScreenState extends State<HealthScreen> {
             ),
           ),
           Text(
-            '${metric.value.toStringAsFixed(metric.type == HealthMetricType.weight ? 1 : 0)} ${_getUnit(metric.type)}',
+            '${metric.value.toStringAsFixed(metric.type == HealthMetricType.weight ? 1 : 0)} ${_metricUnit(metric.type)}',
             style: AppTheme.headingLarge.copyWith(color: AppTheme.successGreen),
           ),
         ],

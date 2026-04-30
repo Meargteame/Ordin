@@ -4,6 +4,7 @@ import '../models/goal.dart';
 import '../data/goal_repository.dart';
 import '../data/hive_storage_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/gradient_app_bar.dart';
 
 class GoalsScreen extends StatefulWidget {
   const GoalsScreen({super.key});
@@ -167,14 +168,8 @@ class _GoalsScreenState extends State<GoalsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: Text('Goals', style: AppTheme.displayMedium),
-        backgroundColor: AppTheme.surfaceWhite,
-        elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: AppTheme.borderGray),
-        ),
+      appBar: GradientAppBar(
+        title: 'Goals',
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -212,6 +207,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
               ],
             ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'goals_fab',
         onPressed: _addGoal,
         backgroundColor: AppTheme.primaryBlue,
         icon: const Icon(Icons.add_rounded, color: Colors.white),

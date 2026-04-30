@@ -5,6 +5,7 @@ import '../models/finance_transaction.dart';
 import '../data/life_areas_repository.dart';
 import '../data/hive_storage_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/gradient_app_bar.dart';
 
 class FinanceScreen extends StatefulWidget {
   const FinanceScreen({super.key});
@@ -43,7 +44,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
   }
 
   Future<void> _addTransaction() async {
-    TransactionType? selectedType;
+    TransactionType? type;
     final amountController = TextEditingController();
     final categoryController = TextEditingController();
     final descController = TextEditingController();
@@ -58,19 +59,19 @@ class _FinanceScreenState extends State<FinanceScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<TransactionType>(
-                  value: selectedType,
+                  value: type,
                   decoration: InputDecoration(
                     labelText: 'Type',
                     labelStyle: AppTheme.labelMedium,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  items: TransactionType.values.map((type) {
+                  items: TransactionType.values.map((t) {
                     return DropdownMenuItem(
-                      value: type,
-                      child: Text(type == TransactionType.income ? 'Income' : 'Expense', style: AppTheme.bodyLarge),
+                      value: t,
+                      child: Text(t == TransactionType.income ? 'Income' : 'Expense', style: AppTheme.bodyLarge),
                     );
                   }).toList(),
-                  onChanged: (value) => setDialogState(() => selectedType = value),
+                  onChanged: (value) => setDialogState(() => type = value),
                 ),
                 const SizedBox(height: 16),
                 TextField(
@@ -81,7 +82,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
                   decoration: InputDecoration(
                     labelText: 'Amount',
                     labelStyle: AppTheme.labelMedium,
-                    prefixText: '\$ ',
+                    prefixText: '\$',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -96,7 +97,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
                   decoration: InputDecoration(
                     labelText: 'Category',
                     labelStyle: AppTheme.labelMedium,
-                    hintText: 'e.g., Food, Salary, Rent',
+                    hintText: 'Food, Transport, Salary, etc.',
                     hintStyle: AppTheme.bodyMedium,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     focusedBorder: OutlineInputBorder(
@@ -141,11 +142,11 @@ class _FinanceScreenState extends State<FinanceScreen> {
       ),
     );
 
-    if (result == true && selectedType != null && amountController.text.isNotEmpty && categoryController.text.isNotEmpty) {
+    if (result == true && type != null && amountController.text.isNotEmpty && categoryController.text.isNotEmpty) {
       final transaction = FinanceTransaction(
         id: const Uuid().v4(),
         date: DateTime.now(),
-        type: selectedType!,
+        type: type!,
         category: categoryController.text,
         amount: double.parse(amountController.text),
         description: descController.text,
@@ -155,18 +156,15 @@ class _FinanceScreenState extends State<FinanceScreen> {
     }
   }
 
+  int get _incomeCount => _transactions.where((t) => t.type == TransactionType.income).length;
+  int get _expenseCount => _transactions.where((t) => t.type == TransactionType.expense).length;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: Text('Finance', style: AppTheme.displayMedium),
-        backgroundColor: AppTheme.surfaceWhite,
-        elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: AppTheme.borderGray),
-        ),
+      appBar: GradientAppBar(
+        title: 'Finance',
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -186,6 +184,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
               ],
             ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'finance_fab',
         onPressed: _addTransaction,
         backgroundColor: AppTheme.successGreen,
         icon: const Icon(Icons.add_rounded, color: Colors.white),
@@ -195,38 +194,55 @@ class _FinanceScreenState extends State<FinanceScreen> {
   }
 
   Widget _buildBalanceCard() {
-    final isPositive = _balance >= 0;
+    final balanceColor = _balance >= 0 ? AppTheme.successGreen : AppTheme.dangerRed;
+
     return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isPositive
-              ? [AppTheme.successGreen, AppTheme.successGreen.withOpacity(0.8)]
-              : [AppTheme.dangerRed, AppTheme.dangerRed.withOpacity(0.8)],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: (isPositive ? AppTheme.successGreen : AppTheme.dangerRed).withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+      padding: const EdgeInsets.all(24),
+      color: AppTheme.surfaceWhite,
+      child: Column(
+        children: [
+          Text('Total Balance', style: AppTheme.labelLarge),
+          const SizedBox(height: 8),
+          Text(
+            '\$${_balance.toStringAsFixed(2)}',
+            style: AppTheme.displayLarge.copyWith(color: balanceColor, fontSize: 40),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard('Income', '$_incomeCount', Icons.arrow_upward_rounded, AppTheme.successGreen),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard('Expenses', '$_expenseCount', Icons.arrow_downward_rounded, AppTheme.dangerRed),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard('Total', '${_transactions.length}', Icons.receipt_rounded, AppTheme.primaryBlue),
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
       child: Column(
         children: [
-          Text('Total Balance', style: AppTheme.labelLarge.copyWith(color: Colors.white.withOpacity(0.9))),
-          const SizedBox(height: 12),
-          Text(
-            '\$${_balance.toStringAsFixed(2)}',
-            style: const TextStyle(
-              fontSize: 48,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              letterSpacing: -1.5,
-            ),
-          ),
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 8),
+          Text(value, style: AppTheme.headingMedium.copyWith(color: color)),
+          const SizedBox(height: 2),
+          Text(label, style: AppTheme.labelMedium),
         ],
       ),
     );
@@ -247,15 +263,15 @@ class _FinanceScreenState extends State<FinanceScreen> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
-              isIncome ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+              isIncome ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
               color: color,
-              size: 24,
+              size: 20,
             ),
           ),
           const SizedBox(width: 16),
@@ -268,23 +284,24 @@ class _FinanceScreenState extends State<FinanceScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
+                        color: AppTheme.primaryBlue.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Text(transaction.category, style: AppTheme.labelMedium.copyWith(color: color)),
+                      child: Text(transaction.category, style: AppTheme.labelMedium.copyWith(color: AppTheme.primaryBlue)),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(transaction.description, style: AppTheme.bodyMedium),
                 const SizedBox(height: 4),
                 Text(
-                  DateFormat('MMM d, yyyy').format(transaction.date),
+                  DateFormat('MMM d, h:mm a').format(transaction.date),
                   style: AppTheme.bodySmall,
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 12),
           Text(
             '${isIncome ? '+' : '-'}\$${transaction.amount.toStringAsFixed(2)}',
             style: AppTheme.headingMedium.copyWith(color: color),

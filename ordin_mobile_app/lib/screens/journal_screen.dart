@@ -5,6 +5,7 @@ import '../models/journal_entry.dart';
 import '../data/notes_repository.dart';
 import '../data/hive_storage_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/gradient_app_bar.dart';
 
 class JournalScreen extends StatefulWidget {
   const JournalScreen({super.key});
@@ -225,14 +226,8 @@ class _JournalScreenState extends State<JournalScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: Text('Journal', style: AppTheme.displayMedium),
-        backgroundColor: AppTheme.surfaceWhite,
-        elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: AppTheme.borderGray),
-        ),
+      appBar: GradientAppBar(
+        title: 'Journal',
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -253,6 +248,7 @@ class _JournalScreenState extends State<JournalScreen> {
               ],
             ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'journal_fab',
         onPressed: _editEntry,
         backgroundColor: AppTheme.infoBlue,
         icon: Icon(_todayEntry == null ? Icons.add_rounded : Icons.edit_rounded, color: Colors.white),

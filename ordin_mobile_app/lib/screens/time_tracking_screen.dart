@@ -5,6 +5,7 @@ import '../models/time_entry.dart';
 import '../data/time_tracking_repository.dart';
 import '../data/hive_storage_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/gradient_app_bar.dart';
 
 class TimeTrackingScreen extends StatefulWidget {
   const TimeTrackingScreen({super.key});
@@ -154,14 +155,8 @@ class _TimeTrackingScreenState extends State<TimeTrackingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: Text('Time Tracking', style: AppTheme.displayMedium),
-        backgroundColor: AppTheme.surfaceWhite,
-        elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: AppTheme.borderGray),
-        ),
+      appBar: GradientAppBar(
+        title: 'Time Tracking',
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -206,12 +201,14 @@ class _TimeTrackingScreenState extends State<TimeTrackingScreen> {
             ),
       floatingActionButton: _activeTimer == null
           ? FloatingActionButton.extended(
+              heroTag: 'time_start_fab',
               onPressed: _startTimer,
               backgroundColor: AppTheme.successGreen,
               icon: const Icon(Icons.play_arrow_rounded, color: Colors.white),
               label: Text('Start Timer', style: AppTheme.labelLarge.copyWith(color: Colors.white)),
             )
           : FloatingActionButton.extended(
+              heroTag: 'time_stop_fab',
               onPressed: _stopTimer,
               backgroundColor: AppTheme.dangerRed,
               icon: const Icon(Icons.stop_rounded, color: Colors.white),

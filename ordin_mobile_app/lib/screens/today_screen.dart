@@ -92,7 +92,7 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
   }
 
   Future<void> _toggleHabit(Habit habit) async {
-    habit.toggle();
+    habit.toggle(DateTime.now());
     await _habitRepo.saveHabit(habit);
     setState(() {});
   }
