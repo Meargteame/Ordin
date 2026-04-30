@@ -4,6 +4,7 @@ import '../data/task_repository.dart';
 import '../data/hive_storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/gradient_app_bar.dart';
+import '../widgets/task_form_screen.dart';
 
 enum TaskFilter { all, today, upcoming, completed }
 enum TaskSort { priority, dueDate, alphabetical }
@@ -105,179 +106,33 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   Future<void> _addTask() async {
-    await _showTaskDialog();
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TaskFormScreen(
+          onSave: (task) async {
+            await _taskRepo.saveTask(task);
+            await _loadTasks();
+          },
+        ),
+      ),
+    );
   }
 
   Future<void> _editTask(Task task) async {
-    await _showTaskDialog(task: task);
-  }
-
-  Future<void> _showTaskDialog({Task? task}) async {
-    final isEdit = task != null;
-    final titleController = TextEditingController(text: task?.title ?? '');
-    final descController = TextEditingController(text: task?.description ?? '');
-    DateTime? selectedDueDate = task?.dueDate;
-    TaskPriority selectedPriority = task?.priority ?? TaskPriority.medium;
-    List<String> selectedTags = List.from(task?.tags ?? []);
-    final tagController = TextEditingController();
-
-    await showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text(isEdit ? 'Edit Task' : 'New Task', style: AppTheme.headingLarge),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Title
-                TextField(
-                  controller: titleController,
-                  autofocus: !isEdit,
-                  style: AppTheme.bodyLarge,
-                  decoration: InputDecoration(
-                    labelText: 'Title',
-                    hintText: 'Task title',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                // Description
-                TextField(
-                  controller: descController,
-                  style: AppTheme.bodyMedium,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    labelText: 'Description (optional)',
-                    hintText: 'Add details...',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                // Priority
-                Text('Priority', style: AppTheme.labelLarge),
-                const SizedBox(height: 8),
-                Row(
-                  children: TaskPriority.values.map((priority) {
-                    final isSelected = selectedPriority == priority;
-                    final color = _getPriorityColor(priority);
-                    return Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ChoiceChip(
-                          label: Text(_getPriorityLabel(priority)),
-                          selected: isSelected,
-                          onSelected: (_) => setDialogState(() => selectedPriority = priority),
-                          selectedColor: color.withOpacity(0.2),
-                          labelStyle: TextStyle(color: isSelected ? color : AppTheme.textSecondary),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 16),
-                
-                // Due Date
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.calendar_today, color: AppTheme.primaryBlue),
-                  title: Text(selectedDueDate == null ? 'Set due date' : _formatDate(selectedDueDate!)),
-                  trailing: selectedDueDate != null 
-                    ? IconButton(
-                        icon: Icon(Icons.clear, size: 20),
-                        onPressed: () => setDialogState(() => selectedDueDate = null),
-                      )
-                    : null,
-                  onTap: () async {
-                    final date = await showDatePicker(
-                      context: context,
-                      initialDate: selectedDueDate ?? DateTime.now(),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(Duration(days: 365)),
-                    );
-                    if (date != null) {
-                      setDialogState(() => selectedDueDate = date);
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
-                
-                // Tags
-                Text('Tags', style: AppTheme.labelLarge),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    ...selectedTags.map((tag) => Chip(
-                      label: Text(tag, style: AppTheme.labelMedium),
-                      deleteIcon: Icon(Icons.close, size: 16),
-                      onDeleted: () => setDialogState(() => selectedTags.remove(tag)),
-                      backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
-                    )),
-                    ActionChip(
-                      label: Icon(Icons.add, size: 16),
-                      onPressed: () async {
-                        final tag = await showDialog<String>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: Text('Add Tag'),
-                            content: TextField(
-                              controller: tagController,
-                              autofocus: true,
-                              decoration: InputDecoration(hintText: 'Tag name'),
-                            ),
-                            actions: [
-                              TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel')),
-                              FilledButton(
-                                onPressed: () => Navigator.pop(context, tagController.text),
-                                child: Text('Add'),
-                              ),
-                            ],
-                          ),
-                        );
-                        if (tag != null && tag.isNotEmpty && !selectedTags.contains(tag)) {
-                          setDialogState(() => selectedTags.add(tag));
-                          tagController.clear();
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (titleController.text.isEmpty) return;
-                
-                final newTask = Task(
-                  id: task?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-                  title: titleController.text,
-                  isDone: task?.isDone ?? false,
-                  date: task?.date ?? DateTime.now(),
-                  dueDate: selectedDueDate,
-                  priority: selectedPriority,
-                  tags: selectedTags,
-                  description: descController.text.isEmpty ? null : descController.text,
-                  subtasks: task?.subtasks ?? [],
-                );
-                
-                _taskRepo.saveTask(newTask).then((_) {
-                  _loadTasks();
-                  Navigator.pop(context);
-                });
-              },
-              child: Text(isEdit ? 'Save' : 'Add'),
-            ),
-          ],
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TaskFormScreen(
+          task: task,
+          onSave: (updatedTask) async {
+            await _taskRepo.saveTask(updatedTask);
+            await _loadTasks();
+          },
+          onDelete: () async {
+            await _taskRepo.deleteTask(task.id);
+            await _loadTasks();
+          },
         ),
       ),
     );

@@ -4,6 +4,7 @@ import '../data/habit_repository.dart';
 import '../data/hive_storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/gradient_app_bar.dart';
+import '../widgets/habit_form_screen.dart';
 
 class HabitsScreen extends StatefulWidget {
   const HabitsScreen({super.key});
@@ -46,178 +47,19 @@ class _HabitsScreenState extends State<HabitsScreen> {
   }
 
   Future<void> _addOrEditHabit({Habit? habit}) async {
-    final isEdit = habit != null;
-    final nameController = TextEditingController(text: habit?.name ?? '');
-    final descController = TextEditingController(text: habit?.description ?? '');
-    HabitFrequency selectedFrequency = habit?.frequency ?? HabitFrequency.daily;
-    HabitCategory selectedCategory = habit?.category ?? HabitCategory.anytime;
-    List<int> selectedDays = List.from(habit?.customDays ?? []);
-    TimeOfDay? selectedTime = habit?.reminderTime != null 
-      ? TimeOfDay(
-          hour: int.parse(habit!.reminderTime!.split(':')[0]),
-          minute: int.parse(habit.reminderTime!.split(':')[1]),
-        )
-      : null;
-
-    await showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text(isEdit ? 'Edit Habit' : 'New Habit', style: AppTheme.headingLarge),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Name
-                TextField(
-                  controller: nameController,
-                  autofocus: !isEdit,
-                  style: AppTheme.bodyLarge,
-                  decoration: InputDecoration(
-                    labelText: 'Habit Name',
-                    hintText: 'e.g., Morning meditation',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                // Description
-                TextField(
-                  controller: descController,
-                  style: AppTheme.bodyMedium,
-                  maxLines: 2,
-                  decoration: InputDecoration(
-                    labelText: 'Description (optional)',
-                    hintText: 'Why is this habit important?',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                // Category
-                Text('Category', style: AppTheme.labelLarge),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: HabitCategory.values.map((category) {
-                    final isSelected = selectedCategory == category;
-                    return ChoiceChip(
-                      label: Text(_getCategoryLabel(category)),
-                      selected: isSelected,
-                      onSelected: (_) => setDialogState(() => selectedCategory = category),
-                      selectedColor: _getCategoryColor(category).withOpacity(0.2),
-                      avatar: isSelected ? Icon(_getCategoryIcon(category), size: 16) : null,
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 16),
-                
-                // Frequency
-                Text('Frequency', style: AppTheme.labelLarge),
-                const SizedBox(height: 8),
-                ...HabitFrequency.values.map((freq) => RadioListTile<HabitFrequency>(
-                  title: Text(_getFrequencyLabel(freq)),
-                  value: freq,
-                  groupValue: selectedFrequency,
-                  onChanged: (value) => setDialogState(() {
-                    selectedFrequency = value!;
-                    if (freq != HabitFrequency.custom) selectedDays.clear();
-                  }),
-                  contentPadding: EdgeInsets.zero,
-                )),
-                
-                // Custom Days
-                if (selectedFrequency == HabitFrequency.custom) ...[
-                  const SizedBox(height: 8),
-                  Text('Select Days', style: AppTheme.labelMedium),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    children: List.generate(7, (index) {
-                      final day = index + 1;
-                      final isSelected = selectedDays.contains(day);
-                      return FilterChip(
-                        label: Text(_getDayLabel(day)),
-                        selected: isSelected,
-                        onSelected: (selected) {
-                          setDialogState(() {
-                            if (selected) {
-                              selectedDays.add(day);
-                            } else {
-                              selectedDays.remove(day);
-                            }
-                          });
-                        },
-                      );
-                    }),
-                  ),
-                ],
-                const SizedBox(height: 16),
-                
-                // Reminder Time
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.alarm, color: AppTheme.primaryBlue),
-                  title: Text(selectedTime == null 
-                    ? 'Set reminder time' 
-                    : 'Reminder: ${selectedTime!.format(context)}'),
-                  trailing: selectedTime != null 
-                    ? IconButton(
-                        icon: Icon(Icons.clear, size: 20),
-                        onPressed: () => setDialogState(() => selectedTime = null),
-                      )
-                    : null,
-                  onTap: () async {
-                    final time = await showTimePicker(
-                      context: context,
-                      initialTime: selectedTime ?? TimeOfDay.now(),
-                    );
-                    if (time != null) {
-                      setDialogState(() => selectedTime = time);
-                    }
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (nameController.text.isEmpty) return;
-                
-                final newHabit = Habit(
-                  id: habit?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-                  name: nameController.text,
-                  description: descController.text.isEmpty ? null : descController.text,
-                  isDoneToday: habit?.isDoneToday ?? false,
-                  streak: habit?.streak ?? 0,
-                  bestStreak: habit?.bestStreak ?? 0,
-                  frequency: selectedFrequency,
-                  category: selectedCategory,
-                  customDays: selectedDays,
-                  reminderTime: selectedTime != null 
-                    ? '${selectedTime!.hour.toString().padLeft(2, '0')}:${selectedTime!.minute.toString().padLeft(2, '0')}'
-                    : null,
-                  completionHistory: habit?.completionHistory ?? {},
-                  createdAt: habit?.createdAt,
-                  totalCompletions: habit?.totalCompletions ?? 0,
-                  linkedHabitIds: habit?.linkedHabitIds ?? [],
-                );
-                
-                _habitRepo.saveHabit(newHabit).then((_) {
-                  _loadHabits();
-                  Navigator.pop(context);
-                });
-              },
-              child: Text(isEdit ? 'Save' : 'Add'),
-            ),
-          ],
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HabitFormScreen(
+          habit: habit,
+          onSave: (updatedHabit) async {
+            await _habitRepo.saveHabit(updatedHabit);
+            await _loadHabits();
+          },
+          onDelete: habit != null ? () async {
+            await _habitRepo.deleteHabit(habit.id);
+            await _loadHabits();
+          } : null,
         ),
       ),
     );
@@ -316,11 +158,10 @@ class _HabitsScreenState extends State<HabitsScreen> {
                   ),
                 ),
                 // Category Filter
-                Container(
-                  height: 50,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Row(
                     children: [
                       FilterChip(
                         label: Text('All'),
@@ -347,7 +188,6 @@ class _HabitsScreenState extends State<HabitsScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 8),
                 // Habit List
                 Expanded(
                   child: displayHabits.isEmpty
