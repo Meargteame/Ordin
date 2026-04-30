@@ -1,11 +1,10 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+import 'package:intl/intl.dart';
 import '../models/time_entry.dart';
 import '../data/time_tracking_repository.dart';
 import '../data/hive_storage_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/time_entry_item.dart';
 
 class TimeTrackingScreen extends StatefulWidget {
   const TimeTrackingScreen({super.key});
@@ -15,353 +14,112 @@ class TimeTrackingScreen extends StatefulWidget {
 }
 
 class _TimeTrackingScreenState extends State<TimeTrackingScreen> {
-  final TimeTrackingRepository _repository = TimeTrackingRepository();
-  final HiveStorageService _storage = HiveStorageService();
-  
+  late TimeTrackingRepository _timeRepo;
+  List<TimeEntry> _entries = [];
   TimeEntry? _activeTimer;
-  List<TimeEntry> _todayEntries = [];
-  Map<String, int> _todayTimeByCategory = {};
-  Timer? _updateTimer;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _initRepository();
+    _initRepo();
   }
 
-  @override
-  void dispose() {
-    _updateTimer?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _initRepository() async {
-    await _storage.init();
-    await _repository.init(_storage);
+  Future<void> _initRepo() async {
+    final storage = HiveStorageService();
+    await storage.init();
+    _timeRepo = TimeTrackingRepository();
+    await _timeRepo.init(storage);
     await _loadData();
-    _startUpdateTimer();
-  }
-
-  void _startUpdateTimer() {
-    _updateTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (_activeTimer != null && mounted) {
-        setState(() {});
-      }
-    });
   }
 
   Future<void> _loadData() async {
-    final activeTimer = await _repository.getActiveTimer();
-    final todayEntries = await _repository.getEntriesForDate(DateTime.now());
-    final timeByCategory = await _repository.getTodayTimeByCategory();
-
+    final entries = await _timeRepo.loadTimeEntries();
+    final active = await _timeRepo.getActiveTimer();
     setState(() {
-      _activeTimer = activeTimer;
-      _todayEntries = todayEntries;
-      _todayTimeByCategory = timeByCategory;
+      _entries = entries;
+      _activeTimer = active;
       _isLoading = false;
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      body: SafeArea(
-        child: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(color: AppTheme.primaryColor),
-              )
-            : SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Time Tracking',
-                      style: AppTheme.heading1,
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    _buildTimerCard(),
-                    const SizedBox(height: 20),
-                    
-                    _buildTodaySummaryCard(),
-                    const SizedBox(height: 20),
-                    
-                    _buildRecentEntriesSection(),
-                  ],
-                ),
-              ),
-      ),
-    );
-  }
+  Future<void> _startTimer() async {
+    final categoryController = TextEditingController();
+    final notesController = TextEditingController();
 
-  Widget _buildTimerCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppTheme.primaryColor,
-            AppTheme.secondaryColor,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          if (_activeTimer != null) ...[
-            const Text(
-              'Timer Running',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _formatDuration(_activeTimer!.calculateDuration()),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 48,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 2,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _activeTimer!.category,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _stopTimer,
-                icon: const Icon(Icons.stop_rounded),
-                label: const Text('Stop Timer'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: AppTheme.primaryColor,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Start Timer', style: AppTheme.headingLarge),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: categoryController,
+              autofocus: true,
+              style: AppTheme.bodyLarge,
+              decoration: InputDecoration(
+                labelText: 'Category',
+                labelStyle: AppTheme.labelMedium,
+                hintText: 'e.g., Work, Study, Exercise',
+                hintStyle: AppTheme.bodyMedium,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 2),
                 ),
               ),
-            ),
-          ] else ...[
-            const Icon(
-              Icons.timer_outlined,
-              size: 48,
-              color: Colors.white,
             ),
             const SizedBox(height: 16),
-            const Text(
-              'No Active Timer',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Start tracking your time',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _showStartTimerDialog,
-                icon: const Icon(Icons.play_arrow_rounded),
-                label: const Text('Start Timer'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: AppTheme.primaryColor,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTodaySummaryCard() {
-    final totalMinutes = _todayTimeByCategory.values.fold(0, (sum, mins) => sum + mins);
-    
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Today\'s Time',
-            style: AppTheme.heading3,
-          ),
-          const SizedBox(height: 16),
-          
-          Row(
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.1),
+            TextField(
+              controller: notesController,
+              style: AppTheme.bodyLarge,
+              maxLines: 2,
+              decoration: InputDecoration(
+                labelText: 'Notes (optional)',
+                labelStyle: AppTheme.labelMedium,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.schedule_rounded,
-                  color: AppTheme.primaryColor,
-                  size: 30,
+                  borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 2),
                 ),
               ),
-              const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _formatDuration(totalMinutes),
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                  const Text(
-                    'Total Time',
-                    style: AppTheme.bodyMedium,
-                  ),
-                ],
-              ),
-            ],
-          ),
-          
-          if (_todayTimeByCategory.isNotEmpty) ...[
-            const SizedBox(height: 20),
-            const Divider(),
-            const SizedBox(height: 12),
-            ..._todayTimeByCategory.entries.map((entry) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(entry.key, style: AppTheme.bodyLarge),
-                  Text(
-                    _formatDuration(entry.value),
-                    style: AppTheme.bodyLarge.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.primaryColor,
-                    ),
-                  ),
-                ],
-              ),
-            )),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRecentEntriesSection() {
-    final completedEntries = _todayEntries.where((e) => !e.isRunning).toList();
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Recent Entries (${completedEntries.length})',
-              style: AppTheme.heading2,
-            ),
-            TextButton.icon(
-              onPressed: _showAddManualEntryDialog,
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Manual'),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        
-        if (completedEntries.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(40),
-            decoration: BoxDecoration(
-              color: AppTheme.cardColor,
-              borderRadius: BorderRadius.circular(16),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel', style: AppTheme.labelLarge.copyWith(color: AppTheme.textSecondary)),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.successGreen,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            child: Center(
-              child: Column(
-                children: [
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(
-                      Icons.history_rounded,
-                      size: 30,
-                      color: AppTheme.primaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('No entries yet', style: AppTheme.heading3),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Start a timer or add manual entry',
-                    style: AppTheme.bodyMedium,
-                  ),
-                ],
-              ),
-            ),
-          )
-        else
-          ...completedEntries.map((entry) => TimeEntryItem(
-            entry: entry,
-            onDelete: () async {
-              await _repository.deleteTimeEntry(entry.id);
-              await _loadData();
-            },
-          )),
-      ],
+            child: Text('Start', style: AppTheme.labelLarge.copyWith(color: Colors.white)),
+          ),
+        ],
+      ),
     );
+
+    if (result == true && categoryController.text.isNotEmpty) {
+      final entry = await _timeRepo.startTimer(null, categoryController.text);
+      entry.notes = notesController.text;
+      await _timeRepo.saveTimeEntry(entry);
+      await _loadData();
+    }
+  }
+
+  Future<void> _stopTimer() async {
+    await _timeRepo.stopTimer();
+    await _loadData();
+  }
+
+  Future<void> _deleteEntry(TimeEntry entry) async {
+    await _timeRepo.deleteTimeEntry(entry.id);
+    await _loadData();
   }
 
   String _formatDuration(int minutes) {
@@ -373,147 +131,258 @@ class _TimeTrackingScreenState extends State<TimeTrackingScreen> {
     return '${mins}m';
   }
 
-  Future<void> _showStartTimerDialog() async {
-    final categoryController = TextEditingController(text: 'Work');
+  int get _todayMinutes {
+    final today = DateTime.now();
+    return _entries
+        .where((e) =>
+            e.startTime.year == today.year &&
+            e.startTime.month == today.month &&
+            e.startTime.day == today.day &&
+            e.endTime != null)
+        .fold<int>(0, (sum, e) => sum + e.durationMinutes);
+  }
 
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Start Timer'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: categoryController,
-              decoration: const InputDecoration(
-                labelText: 'Category',
-                hintText: 'e.g., Work, Learning, Exercise',
-              ),
-              autofocus: true,
-            ),
-          ],
+  int get _weekMinutes {
+    final now = DateTime.now();
+    final weekAgo = now.subtract(const Duration(days: 7));
+    return _entries
+        .where((e) => e.startTime.isAfter(weekAgo) && e.endTime != null)
+        .fold<int>(0, (sum, e) => sum + e.durationMinutes);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
+      appBar: AppBar(
+        title: Text('Time Tracking', style: AppTheme.displayMedium),
+        backgroundColor: AppTheme.surfaceWhite,
+        elevation: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 1, color: AppTheme.borderGray),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  color: AppTheme.surfaceWhite,
+                  child: Column(
+                    children: [
+                      if (_activeTimer != null) _buildActiveTimer(),
+                      if (_activeTimer != null) const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildStatCard('Today', _formatDuration(_todayMinutes), Icons.today_rounded, AppTheme.primaryBlue),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildStatCard('This Week', _formatDuration(_weekMinutes), Icons.calendar_view_week_rounded, AppTheme.successGreen),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildStatCard('Entries', '${_entries.length}', Icons.list_rounded, AppTheme.warningOrange),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: _entries.isEmpty
+                      ? _buildEmptyState()
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(20),
+                          itemCount: _entries.length,
+                          itemBuilder: (context, index) => _buildEntryCard(_entries[index]),
+                        ),
+                ),
+              ],
+            ),
+      floatingActionButton: _activeTimer == null
+          ? FloatingActionButton.extended(
+              onPressed: _startTimer,
+              backgroundColor: AppTheme.successGreen,
+              icon: const Icon(Icons.play_arrow_rounded, color: Colors.white),
+              label: Text('Start Timer', style: AppTheme.labelLarge.copyWith(color: Colors.white)),
+            )
+          : FloatingActionButton.extended(
+              onPressed: _stopTimer,
+              backgroundColor: AppTheme.dangerRed,
+              icon: const Icon(Icons.stop_rounded, color: Colors.white),
+              label: Text('Stop Timer', style: AppTheme.labelLarge.copyWith(color: Colors.white)),
+            ),
+    );
+  }
+
+  Widget _buildActiveTimer() {
+    if (_activeTimer == null) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppTheme.successGreen, AppTheme.successGreen.withOpacity(0.8)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.successGreen.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Start'),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.timer_rounded, color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Timer Running', style: AppTheme.labelMedium.copyWith(color: Colors.white.withOpacity(0.9))),
+                    Text(_activeTimer!.category, style: AppTheme.headingMedium.copyWith(color: Colors.white)),
+                  ],
+                ),
+              ),
+              Text(
+                _formatDuration(_activeTimer!.calculateDuration()),
+                style: AppTheme.displayMedium.copyWith(color: Colors.white),
+              ),
+            ],
           ),
         ],
       ),
     );
-
-    if (result == true && categoryController.text.isNotEmpty) {
-      await _repository.startTimer(null, categoryController.text);
-      await _loadData();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Timer started')),
-        );
-      }
-    }
   }
 
-  Future<void> _stopTimer() async {
-    await _repository.stopTimer();
-    await _loadData();
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Timer stopped')),
-      );
-    }
+  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 8),
+          Text(value, style: AppTheme.headingMedium.copyWith(color: color)),
+          const SizedBox(height: 2),
+          Text(label, style: AppTheme.labelMedium),
+        ],
+      ),
+    );
   }
 
-  Future<void> _showAddManualEntryDialog() async {
-    final categoryController = TextEditingController(text: 'Work');
-    final notesController = TextEditingController();
-    int durationMinutes = 30;
+  Widget _buildEntryCard(TimeEntry entry) {
+    final isRunning = entry.isRunning;
+    final duration = isRunning ? entry.calculateDuration() : entry.durationMinutes;
 
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Add Manual Entry'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceWhite,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isRunning ? AppTheme.successGreen.withOpacity(0.3) : AppTheme.borderGray),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                TextField(
-                  controller: categoryController,
-                  decoration: const InputDecoration(
-                    labelText: 'Category',
-                    hintText: 'e.g., Work, Learning',
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryBlue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
                   ),
+                  child: Text(entry.category, style: AppTheme.labelMedium.copyWith(color: AppTheme.primaryBlue)),
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: notesController,
-                  decoration: const InputDecoration(
-                    labelText: 'Notes',
-                    hintText: 'What did you work on?',
+                const Spacer(),
+                if (!isRunning)
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded, color: AppTheme.dangerRed),
+                    onPressed: () => _deleteEntry(entry),
                   ),
-                  maxLines: 2,
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.access_time_rounded, size: 16, color: AppTheme.textSecondary),
+                const SizedBox(width: 6),
+                Text(
+                  DateFormat('MMM d, h:mm a').format(entry.startTime),
+                  style: AppTheme.bodyMedium,
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    const Text('Duration: '),
-                    Expanded(
-                      child: Slider(
-                        value: durationMinutes.toDouble(),
-                        min: 5,
-                        max: 480,
-                        divisions: 95,
-                        label: _formatDuration(durationMinutes),
-                        onChanged: (value) {
-                          setDialogState(() => durationMinutes = value.toInt());
-                        },
-                      ),
-                    ),
-                    Text(_formatDuration(durationMinutes)),
-                  ],
+                if (!isRunning) ...[
+                  Text(' - ', style: AppTheme.bodyMedium),
+                  Text(
+                    DateFormat('h:mm a').format(entry.endTime!),
+                    style: AppTheme.bodyMedium,
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.timer_outlined, size: 16, color: AppTheme.warningOrange),
+                const SizedBox(width: 6),
+                Text(
+                  _formatDuration(duration),
+                  style: AppTheme.headingMedium.copyWith(color: AppTheme.warningOrange),
                 ),
               ],
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Add'),
-            ),
+            if (entry.notes.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(entry.notes, style: AppTheme.bodyMedium),
+            ],
           ],
         ),
       ),
     );
+  }
 
-    if (result == true && categoryController.text.isNotEmpty) {
-      final now = DateTime.now();
-      final entry = TimeEntry(
-        id: const Uuid().v4(),
-        startTime: now.subtract(Duration(minutes: durationMinutes)),
-        endTime: now,
-        durationMinutes: durationMinutes,
-        category: categoryController.text,
-        notes: notesController.text,
-      );
-
-      await _repository.saveTimeEntry(entry);
-      await _loadData();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Entry added')),
-        );
-      }
-    }
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppTheme.warningOrange.withOpacity(0.08),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.timer_rounded, size: 64, color: AppTheme.warningOrange.withOpacity(0.6)),
+          ),
+          const SizedBox(height: 24),
+          Text('No time entries yet', style: AppTheme.headingLarge),
+          const SizedBox(height: 8),
+          Text('Start tracking your time to see insights', style: AppTheme.bodyMedium),
+        ],
+      ),
+    );
   }
 }

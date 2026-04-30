@@ -3,9 +3,7 @@ import 'package:uuid/uuid.dart';
 import '../models/project.dart';
 import '../data/project_repository.dart';
 import '../data/hive_storage_service.dart';
-import '../widgets/project_card.dart';
 import '../theme/app_theme.dart';
-import 'project_detail_screen.dart';
 
 class ProjectsScreen extends StatefulWidget {
   const ProjectsScreen({super.key});
@@ -14,169 +12,277 @@ class ProjectsScreen extends StatefulWidget {
   State<ProjectsScreen> createState() => _ProjectsScreenState();
 }
 
-class _ProjectsScreenState extends State<ProjectsScreen> with SingleTickerProviderStateMixin {
-  final ProjectRepository _repository = ProjectRepository();
-  final HiveStorageService _storage = HiveStorageService();
+class _ProjectsScreenState extends State<ProjectsScreen> {
+  late ProjectRepository _projectRepo;
   List<Project> _projects = [];
-  late TabController _tabController;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    _tabController.addListener(_onTabChanged);
-    _initRepository();
+    _initRepo();
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _initRepository() async {
-    await _storage.init();
-    await _repository.init(_storage);
-    await _repository.createDefaultTemplates();
+  Future<void> _initRepo() async {
+    final storage = HiveStorageService();
+    await storage.init();
+    _projectRepo = ProjectRepository();
+    await _projectRepo.init(storage);
     await _loadProjects();
   }
 
   Future<void> _loadProjects() async {
-    final projects = await _repository.loadProjects();
+    final projects = await _projectRepo.loadProjects();
     setState(() {
       _projects = projects;
       _isLoading = false;
     });
   }
 
-  void _onTabChanged() {
-    setState(() {});
-  }
+  Future<void> _addProject() async {
+    final titleController = TextEditingController();
+    final descController = TextEditingController();
+    final categoryController = TextEditingController();
 
-  List<Project> get _filteredProjects {
-    switch (_tabController.index) {
-      case 0:
-        return _projects.where((p) => p.status == ProjectStatus.active).toList();
-      case 1:
-        return _projects.where((p) => p.status == ProjectStatus.planning).toList();
-      case 2:
-        return _projects.where((p) => p.status == ProjectStatus.completed).toList();
-      default:
-        return _projects;
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('New Project', style: AppTheme.headingLarge),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                autofocus: true,
+                style: AppTheme.bodyLarge,
+                decoration: InputDecoration(
+                  labelText: 'Title',
+                  labelStyle: AppTheme.labelMedium,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: descController,
+                style: AppTheme.bodyLarge,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: 'Description',
+                  labelStyle: AppTheme.labelMedium,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: categoryController,
+                style: AppTheme.bodyLarge,
+                decoration: InputDecoration(
+                  labelText: 'Category',
+                  labelStyle: AppTheme.labelMedium,
+                  hintText: 'e.g., Work, Personal, Learning',
+                  hintStyle: AppTheme.bodyMedium,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 2),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel', style: AppTheme.labelLarge.copyWith(color: AppTheme.textSecondary)),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.primaryBlue,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: Text('Add', style: AppTheme.labelLarge.copyWith(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true && titleController.text.isNotEmpty) {
+      final project = Project(
+        id: const Uuid().v4(),
+        title: titleController.text,
+        description: descController.text,
+        status: ProjectStatus.planning,
+        category: categoryController.text.isEmpty ? 'General' : categoryController.text,
+        progress: 0.0,
+        createdDate: DateTime.now(),
+      );
+      await _projectRepo.saveProject(project);
+      await _loadProjects();
     }
   }
+
+  Future<void> _deleteProject(Project project) async {
+    await _projectRepo.deleteProject(project.id);
+    await _loadProjects();
+  }
+
+  int get _activeCount => _projects.where((p) => p.status == ProjectStatus.active).length;
+  int get _completedCount => _projects.where((p) => p.status == ProjectStatus.completed).length;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Projects',
-                    style: AppTheme.heading1,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _projects.isEmpty
-                        ? 'No projects yet'
-                        : '${_projects.length} ${_projects.length == 1 ? 'project' : 'projects'}',
-                    style: AppTheme.bodyMedium,
-                  ),
-                ],
-              ),
-            ),
-            
-            Container(
-              height: 50,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: [
-                  _buildStatusChip('Active', 0),
-                  _buildStatusChip('Planning', 1),
-                  _buildStatusChip('Completed', 2),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 12),
-            
-            Expanded(
-              child: _isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        color: AppTheme.primaryColor,
-                      ),
-                    )
-                  : _filteredProjects.isEmpty
-                      ? _buildEmptyState()
-                      : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          itemCount: _filteredProjects.length,
-                          itemBuilder: (context, index) {
-                            final project = _filteredProjects[index];
-                            return ProjectCard(
-                              project: project,
-                              onTap: () => _navigateToDetail(project),
-                            );
-                          },
-                        ),
-            ),
-          ],
+      appBar: AppBar(
+        title: Text('Projects', style: AppTheme.displayMedium),
+        backgroundColor: AppTheme.surfaceWhite,
+        elevation: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 1, color: AppTheme.borderGray),
         ),
       ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  color: AppTheme.surfaceWhite,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatCard('Total', '${_projects.length}', Icons.folder_rounded, AppTheme.primaryBlue),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildStatCard('Active', '$_activeCount', Icons.play_circle_rounded, AppTheme.warningOrange),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildStatCard('Done', '$_completedCount', Icons.check_circle_rounded, AppTheme.successGreen),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: _projects.isEmpty
+                      ? _buildEmptyState()
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(20),
+                          itemCount: _projects.length,
+                          itemBuilder: (context, index) => _buildProjectCard(_projects[index]),
+                        ),
+                ),
+              ],
+            ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showCreateOptions,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('New Project'),
+        onPressed: _addProject,
+        backgroundColor: AppTheme.primaryBlue,
+        icon: const Icon(Icons.add_rounded, color: Colors.white),
+        label: Text('Add Project', style: AppTheme.labelLarge.copyWith(color: Colors.white)),
       ),
     );
   }
 
-  Widget _buildStatusChip(String label, int index) {
-    final isSelected = _tabController.index == index;
-    return GestureDetector(
-      onTap: () {
-        _tabController.animateTo(index);
-      },
-      child: Container(
-        margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor : AppTheme.cardColor,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 8),
+          Text(value, style: AppTheme.headingLarge.copyWith(color: color)),
+          const SizedBox(height: 2),
+          Text(label, style: AppTheme.labelMedium),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProjectCard(Project project) {
+    final statusColor = _statusColor(project.status);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceWhite,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.borderGray),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
                   ),
-                ]
-              : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
+                  child: Text(_statusName(project.status), style: AppTheme.labelMedium.copyWith(color: statusColor)),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppTheme.infoBlue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
                   ),
-                ],
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : AppTheme.textPrimary,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            fontSize: 14,
-          ),
+                  child: Text(project.category, style: AppTheme.labelMedium.copyWith(color: AppTheme.infoBlue)),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline_rounded, color: AppTheme.dangerRed),
+                  onPressed: () => _deleteProject(project),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(project.title, style: AppTheme.headingMedium),
+            if (project.description.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(project.description, style: AppTheme.bodyMedium),
+            ],
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: project.progress,
+                      backgroundColor: AppTheme.borderGray,
+                      valueColor: AlwaysStoppedAnimation(statusColor),
+                      minHeight: 6,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text('${(project.progress * 100).toInt()}%', style: AppTheme.labelMedium.copyWith(color: statusColor)),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -188,229 +294,39 @@ class _ProjectsScreenState extends State<ProjectsScreen> with SingleTickerProvid
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 80,
-            height: 80,
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
+              color: AppTheme.primaryBlue.withOpacity(0.08),
+              shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.folder_rounded,
-              size: 40,
-              color: AppTheme.primaryColor,
-            ),
+            child: Icon(Icons.folder_rounded, size: 64, color: AppTheme.primaryBlue.withOpacity(0.6)),
           ),
           const SizedBox(height: 24),
-          const Text(
-            'No projects yet',
-            style: AppTheme.heading2,
-          ),
+          Text('No projects yet', style: AppTheme.headingLarge),
           const SizedBox(height: 8),
-          Text(
-            'Create a project to organize your tasks',
-            style: AppTheme.bodyMedium,
-            textAlign: TextAlign.center,
-          ),
+          Text('Create your first project to get started', style: AppTheme.bodyMedium),
         ],
       ),
     );
   }
 
-  Future<void> _showCreateOptions() async {
-    final templates = await _repository.loadTemplates();
-    
-    if (!mounted) return;
-    
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Create Project',
-              style: AppTheme.heading2,
-            ),
-            const SizedBox(height: 20),
-            ListTile(
-              leading: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.add_rounded, color: AppTheme.primaryColor),
-              ),
-              title: const Text('Blank Project'),
-              subtitle: const Text('Start from scratch'),
-              onTap: () {
-                Navigator.pop(context);
-                _showCreateProjectDialog();
-              },
-            ),
-            if (templates.isNotEmpty) ...[
-              const Divider(),
-              const Text(
-                'From Template',
-                style: AppTheme.heading3,
-              ),
-              const SizedBox(height: 8),
-              ...templates.map((template) => ListTile(
-                leading: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppTheme.secondaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.content_copy_rounded, color: AppTheme.secondaryColor),
-                ),
-                title: Text(template.name),
-                subtitle: Text(template.description),
-                onTap: () async {
-                  Navigator.pop(context);
-                  await _createFromTemplate(template.id);
-                },
-              )),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showCreateProjectDialog() async {
-    final titleController = TextEditingController();
-    final descriptionController = TextEditingController();
-    final categoryController = TextEditingController(text: 'General');
-    DateTime? selectedDeadline;
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Create Project'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: titleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Title',
-                    hintText: 'Enter project title',
-                  ),
-                  autofocus: true,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description',
-                    hintText: 'What is this project about?',
-                  ),
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: categoryController,
-                  decoration: const InputDecoration(
-                    labelText: 'Category',
-                    hintText: 'e.g., Work, Personal, Learning',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Deadline'),
-                  subtitle: Text(
-                    selectedDeadline != null
-                        ? '${selectedDeadline!.day}/${selectedDeadline!.month}/${selectedDeadline!.year}'
-                        : 'No deadline set',
-                  ),
-                  trailing: const Icon(Icons.calendar_today),
-                  onTap: () async {
-                    final date = await showDatePicker(
-                      context: context,
-                      initialDate: DateTime.now(),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 3650)),
-                    );
-                    if (date != null) {
-                      setDialogState(() => selectedDeadline = date);
-                    }
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Create'),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (result == true && titleController.text.isNotEmpty) {
-      final project = Project(
-        id: const Uuid().v4(),
-        title: titleController.text,
-        description: descriptionController.text,
-        status: ProjectStatus.planning,
-        category: categoryController.text,
-        deadline: selectedDeadline,
-        progress: 0.0,
-        createdDate: DateTime.now(),
-      );
-
-      await _repository.saveProject(project);
-      await _loadProjects();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Project created')),
-        );
-      }
+  String _statusName(ProjectStatus status) {
+    switch (status) {
+      case ProjectStatus.planning: return 'Planning';
+      case ProjectStatus.active: return 'Active';
+      case ProjectStatus.onHold: return 'On Hold';
+      case ProjectStatus.completed: return 'Completed';
+      case ProjectStatus.archived: return 'Archived';
     }
   }
 
-  Future<void> _createFromTemplate(String templateId) async {
-    try {
-      final project = await _repository.createProjectFromTemplate(templateId);
-      await _loadProjects();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Project "${project.title}" created from template')),
-        );
-        _navigateToDetail(project);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
+  Color _statusColor(ProjectStatus status) {
+    switch (status) {
+      case ProjectStatus.planning: return AppTheme.infoBlue;
+      case ProjectStatus.active: return AppTheme.warningOrange;
+      case ProjectStatus.onHold: return AppTheme.textSecondary;
+      case ProjectStatus.completed: return AppTheme.successGreen;
+      case ProjectStatus.archived: return AppTheme.textTertiary;
     }
-  }
-
-  Future<void> _navigateToDetail(Project project) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ProjectDetailScreen(projectId: project.id),
-      ),
-    );
-    await _loadProjects();
   }
 }

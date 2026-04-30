@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
+import 'package:intl/intl.dart';
 import '../services/analytics_engine.dart';
 import '../data/hive_storage_service.dart';
-import '../data/task_repository.dart';
-import '../data/habit_repository.dart';
-import '../data/goal_repository.dart';
-import '../data/time_tracking_repository.dart';
+import '../theme/app_theme.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -16,51 +13,36 @@ class AnalyticsScreen extends StatefulWidget {
 
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
   late AnalyticsEngine _analytics;
-  late HiveStorageService _storage;
+  Map<String, dynamic> _insights = {};
   double _todayScore = 0.0;
   Map<int, double> _weekTrend = {};
-  int _totalTasks = 0;
-  int _completedTasks = 0;
-  int _activeGoals = 0;
-  int _totalTimeMinutes = 0;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _initializeAnalytics();
+    _initAnalytics();
   }
 
-  Future<void> _initializeAnalytics() async {
-    _storage = HiveStorageService();
-    await _storage.init();
-    
+  Future<void> _initAnalytics() async {
+    final storage = HiveStorageService();
+    await storage.init();
     _analytics = AnalyticsEngine();
-    await _analytics.init(_storage);
-    
-    await _loadAnalytics();
+    await _analytics.init(storage);
+    await _loadData();
   }
 
-  Future<void> _loadAnalytics() async {
+  Future<void> _loadData() async {
+    final insights = await _analytics.getCrossAreaInsights();
     final today = DateTime.now();
+    final score = await _analytics.calculateProductivityScore(today);
     final weekAgo = today.subtract(const Duration(days: 7));
-    
-    final todayScore = await _analytics.calculateProductivityScore(today);
-    final weekTrend = await _analytics.getProductivityTrend(weekAgo, today);
-    
-    final tasks = await TaskRepository(_storage).loadTasks();
-    final goals = await GoalRepository(_storage).getActiveGoals();
-    final timeEntries = await TimeTrackingRepository(_storage).getEntriesForDateRange(weekAgo, today);
-    
-    final totalTime = timeEntries.fold(0, (sum, entry) => sum + entry.durationMinutes);
-    
+    final trend = await _analytics.getProductivityTrend(weekAgo, today);
+
     setState(() {
-      _todayScore = todayScore;
-      _weekTrend = weekTrend;
-      _totalTasks = tasks.length;
-      _completedTasks = tasks.where((t) => t.isDone).length;
-      _activeGoals = goals.length;
-      _totalTimeMinutes = totalTime;
+      _insights = insights;
+      _todayScore = score;
+      _weekTrend = trend;
       _isLoading = false;
     });
   }
@@ -70,202 +52,291 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Analytics'),
-        backgroundColor: AppTheme.backgroundColor,
+        title: Text('Analytics', style: AppTheme.displayMedium),
+        backgroundColor: AppTheme.surfaceWhite,
         elevation: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 1, color: AppTheme.borderGray),
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          : RefreshIndicator(
+              onRefresh: _loadData,
+              child: ListView(
+                padding: const EdgeInsets.all(20),
                 children: [
-                  // Productivity Score Card
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [AppTheme.primaryColor, AppTheme.primaryColor.withOpacity(0.7)],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      children: [
-                        const Text(
-                          'Today\'s Productivity',
-                          style: TextStyle(color: Colors.white70, fontSize: 16),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          '${(_todayScore * 100).toInt()}%',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        LinearProgressIndicator(
-                          value: _todayScore,
-                          backgroundColor: Colors.white24,
-                          valueColor: const AlwaysStoppedAnimation(Colors.white),
-                        ),
-                      ],
-                    ),
-                  ),
-                  
+                  _buildProductivityScore(),
                   const SizedBox(height: 24),
-                  const Text('Weekly Trend', style: AppTheme.heading3),
-                  const SizedBox(height: 12),
-                  
-                  // Week Trend Chart
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppTheme.cardColor,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: _buildWeekChart(),
-                  ),
-                  
-                  const SizedBox(height: 24),
-                  const Text('Overview', style: AppTheme.heading3),
-                  const SizedBox(height: 12),
-                  
-                  // Stats Grid
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          'Tasks',
-                          '$_completedTasks/$_totalTasks',
-                          Icons.task_alt_rounded,
-                          AppTheme.primaryColor,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildStatCard(
-                          'Goals',
-                          '$_activeGoals',
-                          Icons.flag_rounded,
-                          AppTheme.successColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          'Time Tracked',
-                          '${(_totalTimeMinutes / 60).toStringAsFixed(1)}h',
-                          Icons.schedule_rounded,
-                          AppTheme.warningColor,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildStatCard(
-                          'Completion',
-                          _totalTasks > 0 ? '${((_completedTasks / _totalTasks) * 100).toInt()}%' : '0%',
-                          Icons.check_circle_rounded,
-                          AppTheme.mediumPriority,
-                        ),
-                      ),
-                    ],
-                  ),
+                  _buildInsightsGrid(),
+                  const SizedBox(height: 32),
+                  Text('Weekly Trend', style: AppTheme.headingLarge),
+                  const SizedBox(height: 16),
+                  _buildWeeklyTrend(),
+                  const SizedBox(height: 32),
+                  _buildQuickStats(),
                 ],
               ),
             ),
     );
   }
 
-  Widget _buildWeekChart() {
-    if (_weekTrend.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text('No data yet', style: AppTheme.caption),
-        ),
-      );
-    }
+  Widget _buildProductivityScore() {
+    final score = (_todayScore * 100).toInt();
+    final color = score >= 80
+        ? AppTheme.successGreen
+        : score >= 50
+            ? AppTheme.warningOrange
+            : AppTheme.dangerRed;
 
-    final maxScore = _weekTrend.values.reduce((a, b) => a > b ? a : b);
-    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    
-    return SizedBox(
-      height: 150,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: List.generate(7, (index) {
-          final dayIndex = (index + 1) % 7;
-          final score = _weekTrend[dayIndex] ?? 0.0;
-          final height = maxScore > 0 ? (score / maxScore) * 120 : 0.0;
-          
-          return Column(
-            mainAxisAlignment: MainAxisAlignment.end,
+    return Container(
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color, color.withOpacity(0.8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
             children: [
-              Text(
-                '${(score * 100).toInt()}',
-                style: AppTheme.caption.copyWith(fontSize: 10),
-              ),
-              const SizedBox(height: 4),
               Container(
-                width: 32,
-                height: height.clamp(8.0, 120.0),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [
-                      AppTheme.primaryColor,
-                      AppTheme.primaryColor.withOpacity(0.6),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.insights_rounded, color: Colors.white, size: 28),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Productivity Score',
+                      style: AppTheme.labelLarge.copyWith(color: Colors.white.withOpacity(0.9)),
+                    ),
+                    Text(
+                      DateFormat('EEEE, MMM d').format(DateTime.now()),
+                      style: AppTheme.bodySmall.copyWith(color: Colors.white.withOpacity(0.8)),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
               Text(
-                days[index],
-                style: AppTheme.caption.copyWith(fontSize: 11),
+                '$score',
+                style: const TextStyle(
+                  fontSize: 72,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: -2,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '%',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white.withOpacity(0.9),
+                ),
               ),
             ],
-          );
-        }),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _getScoreMessage(score),
+            style: AppTheme.bodyMedium.copyWith(color: Colors.white.withOpacity(0.9)),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
+  String _getScoreMessage(int score) {
+    if (score >= 90) return 'Outstanding performance!';
+    if (score >= 80) return 'Excellent work today!';
+    if (score >= 70) return 'Great productivity!';
+    if (score >= 60) return 'Good progress!';
+    if (score >= 50) return 'Keep pushing forward!';
+    return 'Room for improvement';
+  }
+
+  Widget _buildInsightsGrid() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildInsightCard(
+            'Week Average',
+            '${_insights['weekAverage'] ?? 0}%',
+            Icons.trending_up_rounded,
+            AppTheme.primaryBlue,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildInsightCard(
+            'Top Category',
+            _insights['topCategory'] ?? 'None',
+            Icons.category_rounded,
+            AppTheme.successGreen,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInsightCard(String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.cardColor,
+        color: AppTheme.surfaceWhite,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.borderGray),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(height: 16),
+          Text(value, style: AppTheme.headingLarge.copyWith(color: color)),
+          const SizedBox(height: 4),
+          Text(label, style: AppTheme.bodyMedium),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeeklyTrend() {
+    if (_weekTrend.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(40),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceWhite,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.borderGray),
+        ),
+        child: Center(
+          child: Text('No data available', style: AppTheme.bodyMedium),
+        ),
+      );
+    }
+
+    final sortedEntries = _weekTrend.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceWhite,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.borderGray),
+      ),
+      child: Column(
+        children: sortedEntries.map((entry) {
+          final date = DateTime.fromMillisecondsSinceEpoch(entry.key);
+          final score = (entry.value * 100).toInt();
+          final color = score >= 70
+              ? AppTheme.successGreen
+              : score >= 50
+                  ? AppTheme.warningOrange
+                  : AppTheme.dangerRed;
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(DateFormat('EEE, MMM d').format(date), style: AppTheme.bodyMedium),
+                    Text('$score%', style: AppTheme.labelLarge.copyWith(color: color)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: entry.value,
+                    backgroundColor: AppTheme.borderGray,
+                    valueColor: AlwaysStoppedAnimation(color),
+                    minHeight: 8,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildQuickStats() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Quick Stats', style: AppTheme.headingLarge),
+        const SizedBox(height: 16),
+        _buildStatRow('Tasks Completed', '${_insights['todayScore'] ?? 0}%', Icons.check_circle_rounded, AppTheme.primaryBlue),
+        const SizedBox(height: 12),
+        _buildStatRow('Habits Maintained', '${_insights['weekAverage'] ?? 0}%', Icons.auto_awesome_rounded, AppTheme.successGreen),
+        const SizedBox(height: 12),
+        _buildStatRow('Time Tracked', '0h', Icons.timer_rounded, AppTheme.warningOrange),
+      ],
+    );
+  }
+
+  Widget _buildStatRow(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceWhite,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.borderGray),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: color, size: 20),
           ),
-          const SizedBox(height: 12),
-          Text(label, style: AppTheme.caption),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: AppTheme.heading3.copyWith(fontSize: 20),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(label, style: AppTheme.bodyLarge),
           ),
+          Text(value, style: AppTheme.headingMedium.copyWith(color: color)),
         ],
       ),
     );

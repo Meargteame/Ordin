@@ -30,7 +30,8 @@ class ExportService {
     data['habits'] = habits.map((h) => h.toJson()).toList();
     
     // Export goals
-    final goalRepo = GoalRepository(_storage);
+    final goalRepo = GoalRepository();
+    await goalRepo.init(_storage);
     final goals = await goalRepo.loadGoals();
     data['goals'] = goals.map((g) => g.toJson()).toList();
     
@@ -43,7 +44,8 @@ class ExportService {
     data['milestones'] = allMilestones;
     
     // Export projects
-    final projectRepo = ProjectRepository(_storage);
+    final projectRepo = ProjectRepository();
+    await projectRepo.init(_storage);
     final projects = await projectRepo.loadProjects();
     data['projects'] = projects.map((p) => p.toJson()).toList();
     
@@ -106,8 +108,13 @@ class ExportService {
   Future<Map<String, dynamic>> getExportStats() async {
     final taskRepo = TaskRepository(_storage);
     final habitRepo = HabitRepository(_storage);
-    final goalRepo = GoalRepository(_storage);
-    final projectRepo = ProjectRepository(_storage);
+    
+    final goalRepo = GoalRepository();
+    await goalRepo.init(_storage);
+    
+    final projectRepo = ProjectRepository();
+    await projectRepo.init(_storage);
+    
     final notesRepo = NotesRepository(_storage);
     
     final tasks = await taskRepo.loadTasks();

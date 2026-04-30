@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
+import 'package:uuid/uuid.dart';
+import 'package:intl/intl.dart';
 import '../models/health_metric.dart';
 import '../data/life_areas_repository.dart';
 import '../data/hive_storage_service.dart';
+import '../theme/app_theme.dart';
 
 class HealthScreen extends StatefulWidget {
   const HealthScreen({super.key});
@@ -12,98 +14,127 @@ class HealthScreen extends StatefulWidget {
 }
 
 class _HealthScreenState extends State<HealthScreen> {
-  late LifeAreasRepository _repository;
+  late LifeAreasRepository _repo;
   List<HealthMetric> _metrics = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _repository = LifeAreasRepository(HiveStorageService());
-    _loadMetrics();
+    _initRepo();
   }
 
-  Future<void> _loadMetrics() async {
-    final metrics = await _repository.loadHealthMetrics();
-    setState(() => _metrics = metrics);
+  Future<void> _initRepo() async {
+    final storage = HiveStorageService();
+    await storage.init();
+    _repo = LifeAreasRepository(storage);
+    await _loadData();
   }
 
-  void _showAddMetricDialog() {
-    HealthMetricType selectedType = HealthMetricType.workout;
+  Future<void> _loadData() async {
+    final metrics = await _repo.loadHealthMetrics();
+    setState(() {
+      _metrics = metrics;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _addMetric() async {
+    HealthMetricType? selectedType;
     final valueController = TextEditingController();
     final notesController = TextEditingController();
 
-    showDialog(
+    final result = await showDialog<bool>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Log Health Metric'),
+          title: Text('Log Health Metric', style: AppTheme.headingLarge),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<HealthMetricType>(
                   value: selectedType,
-                  decoration: const InputDecoration(labelText: 'Type'),
+                  decoration: InputDecoration(
+                    labelText: 'Type',
+                    labelStyle: AppTheme.labelMedium,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                   items: HealthMetricType.values.map((type) {
                     return DropdownMenuItem(
                       value: type,
-                      child: Text(_getMetricLabel(type)),
+                      child: Text(_getTypeName(type), style: AppTheme.bodyLarge),
                     );
                   }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setDialogState(() => selectedType = value);
-                    }
-                  },
+                  onChanged: (value) => setDialogState(() => selectedType = value),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 TextField(
                   controller: valueController,
-                  decoration: InputDecoration(
-                    labelText: _getValueLabel(selectedType),
-                  ),
                   keyboardType: TextInputType.number,
+                  style: AppTheme.bodyLarge,
+                  decoration: InputDecoration(
+                    labelText: 'Value',
+                    labelStyle: AppTheme.labelMedium,
+                    hintText: 'e.g., 8 (hours), 2000 (ml), 70 (kg)',
+                    hintStyle: AppTheme.bodyMedium,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppTheme.successGreen, width: 2),
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 TextField(
                   controller: notesController,
-                  decoration: const InputDecoration(labelText: 'Notes (optional)'),
+                  style: AppTheme.bodyLarge,
                   maxLines: 2,
+                  decoration: InputDecoration(
+                    labelText: 'Notes (optional)',
+                    labelStyle: AppTheme.labelMedium,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppTheme.successGreen, width: 2),
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('Cancel', style: AppTheme.labelLarge.copyWith(color: AppTheme.textSecondary)),
             ),
-            TextButton(
-              onPressed: () async {
-                final value = double.tryParse(valueController.text);
-                if (value == null) return;
-
-                final metric = HealthMetric(
-                  id: _repository.generateId(),
-                  date: DateTime.now(),
-                  type: selectedType,
-                  value: value,
-                  notes: notesController.text.isEmpty ? null : notesController.text,
-                );
-
-                await _repository.saveHealthMetric(metric);
-                Navigator.pop(context);
-                _loadMetrics();
-              },
-              child: const Text('Save'),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppTheme.successGreen,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: Text('Log', style: AppTheme.labelLarge.copyWith(color: Colors.white)),
             ),
           ],
         ),
       ),
     );
+
+    if (result == true && selectedType != null && valueController.text.isNotEmpty) {
+      final metric = HealthMetric(
+        id: const Uuid().v4(),
+        date: DateTime.now(),
+        type: selectedType!,
+        value: double.parse(valueController.text),
+        notes: notesController.text.isEmpty ? null : notesController.text,
+      );
+      await _repo.saveHealthMetric(metric);
+      await _loadData();
+    }
   }
 
-  String _getMetricLabel(HealthMetricType type) {
+  String _getTypeName(HealthMetricType type) {
     switch (type) {
       case HealthMetricType.workout:
         return 'Workout';
@@ -118,33 +149,33 @@ class _HealthScreenState extends State<HealthScreen> {
     }
   }
 
-  String _getValueLabel(HealthMetricType type) {
+  String _getUnit(HealthMetricType type) {
     switch (type) {
       case HealthMetricType.workout:
-        return 'Duration (minutes)';
+        return 'min';
       case HealthMetricType.waterIntake:
-        return 'Amount (glasses)';
+        return 'ml';
       case HealthMetricType.sleep:
-        return 'Hours';
+        return 'hrs';
       case HealthMetricType.weight:
-        return 'Weight (kg)';
+        return 'kg';
       case HealthMetricType.meals:
-        return 'Number of meals';
+        return 'meals';
     }
   }
 
-  String _formatValue(HealthMetric metric) {
-    switch (metric.type) {
+  IconData _getIcon(HealthMetricType type) {
+    switch (type) {
       case HealthMetricType.workout:
-        return '${metric.value.toInt()} min';
+        return Icons.fitness_center_rounded;
       case HealthMetricType.waterIntake:
-        return '${metric.value.toInt()} glasses';
+        return Icons.water_drop_rounded;
       case HealthMetricType.sleep:
-        return '${metric.value} hrs';
+        return Icons.bedtime_rounded;
       case HealthMetricType.weight:
-        return '${metric.value} kg';
+        return Icons.monitor_weight_rounded;
       case HealthMetricType.meals:
-        return '${metric.value.toInt()} meals';
+        return Icons.restaurant_rounded;
     }
   }
 
@@ -153,113 +184,97 @@ class _HealthScreenState extends State<HealthScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Health & Fitness'),
-        backgroundColor: AppTheme.backgroundColor,
+        title: Text('Health', style: AppTheme.displayMedium),
+        backgroundColor: AppTheme.surfaceWhite,
         elevation: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 1, color: AppTheme.borderGray),
+        ),
       ),
-      body: _metrics.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: AppTheme.successColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Icon(
-                      Icons.favorite_rounded,
-                      size: 40,
-                      color: AppTheme.successColor,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('No health metrics yet', style: AppTheme.heading3),
-                  const SizedBox(height: 8),
-                  const Text('Start tracking your health', style: AppTheme.caption),
-                ],
-              ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _metrics.length,
-              itemBuilder: (context, index) {
-                final metric = _metrics[index];
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppTheme.cardColor,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: AppTheme.successColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.favorite_rounded,
-                          color: AppTheme.successColor,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _getMetricLabel(metric.type),
-                              style: AppTheme.heading3.copyWith(fontSize: 16),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _formatValue(metric),
-                              style: AppTheme.bodyMedium,
-                            ),
-                            if (metric.notes != null) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                metric.notes!,
-                                style: AppTheme.caption,
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      Text(
-                        _formatDate(metric.date),
-                        style: AppTheme.caption,
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _metrics.isEmpty
+              ? _buildEmptyState()
+              : ListView.builder(
+                  padding: const EdgeInsets.all(20),
+                  itemCount: _metrics.length,
+                  itemBuilder: (context, index) => _buildMetricCard(_metrics[index]),
+                ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showAddMetricDialog,
-        backgroundColor: AppTheme.successColor,
-        icon: const Icon(Icons.add),
-        label: const Text('Log Metric'),
+        onPressed: _addMetric,
+        backgroundColor: AppTheme.successGreen,
+        icon: const Icon(Icons.add_rounded, color: Colors.white),
+        label: Text('Log Metric', style: AppTheme.labelLarge.copyWith(color: Colors.white)),
       ),
     );
   }
 
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final diff = now.difference(date);
+  Widget _buildMetricCard(HealthMetric metric) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceWhite,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.borderGray),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.successGreen.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(_getIcon(metric.type), color: AppTheme.successGreen, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(_getTypeName(metric.type), style: AppTheme.headingMedium),
+                const SizedBox(height: 4),
+                Text(
+                  DateFormat('MMM d, yyyy • h:mm a').format(metric.date),
+                  style: AppTheme.bodySmall,
+                ),
+                if (metric.notes != null) ...[
+                  const SizedBox(height: 4),
+                  Text(metric.notes!, style: AppTheme.bodyMedium),
+                ],
+              ],
+            ),
+          ),
+          Text(
+            '${metric.value.toStringAsFixed(metric.type == HealthMetricType.weight ? 1 : 0)} ${_getUnit(metric.type)}',
+            style: AppTheme.headingLarge.copyWith(color: AppTheme.successGreen),
+          ),
+        ],
+      ),
+    );
+  }
 
-    if (diff.inDays == 0) {
-      return 'Today';
-    } else if (diff.inDays == 1) {
-      return 'Yesterday';
-    } else {
-      return '${diff.inDays}d ago';
-    }
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppTheme.successGreen.withOpacity(0.08),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.favorite_rounded, size: 64, color: AppTheme.successGreen.withOpacity(0.6)),
+          ),
+          const SizedBox(height: 24),
+          Text('No health metrics yet', style: AppTheme.headingLarge),
+          const SizedBox(height: 8),
+          Text('Start tracking your health journey', style: AppTheme.bodyMedium),
+        ],
+      ),
+    );
   }
 }

@@ -5,7 +5,6 @@ import 'screens/today_screen.dart';
 import 'screens/tasks_screen.dart';
 import 'screens/habits_screen.dart';
 import 'screens/more_screen.dart';
-import 'screens/goals_screen.dart';
 import 'theme/app_theme.dart';
 import 'data/hive_storage_service.dart';
 
@@ -35,7 +34,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Ordin',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      theme: AppTheme.theme,
       home: const MainScreen(),
     );
   }
