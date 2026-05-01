@@ -18,14 +18,14 @@ class GradientAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppTheme.primaryColor,
-            AppTheme.secondaryColor,
-            AppTheme.primaryColor.withOpacity(0.8),
+            Color(0xFF0EA5E9), // Sky Blue
+            Color(0xFF0284C7), // Deep Sky Blue
+            Color(0xFF06B6D4), // Cyan
           ],
         ),
       ),

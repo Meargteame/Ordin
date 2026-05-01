@@ -54,11 +54,10 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
       title: _titleController.text.trim(),
       description: _descController.text.trim().isEmpty ? null : _descController.text.trim(),
       isDone: widget.task?.isDone ?? false,
+      date: widget.task?.date ?? DateTime.now(),
       priority: _priority,
       dueDate: _dueDate,
       tags: _tags,
-      createdAt: widget.task?.createdAt,
-      completedAt: widget.task?.completedAt,
     );
 
     widget.onSave(task);
@@ -153,8 +152,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
         return 'Medium';
       case TaskPriority.high:
         return 'High';
-      case TaskPriority.urgent:
-        return 'Urgent';
     }
   }
 
@@ -166,8 +163,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
         return Icons.remove_rounded;
       case TaskPriority.high:
         return Icons.arrow_upward_rounded;
-      case TaskPriority.urgent:
-        return Icons.priority_high_rounded;
     }
   }
 
@@ -179,8 +174,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
         return AppTheme.primaryBlue;
       case TaskPriority.high:
         return AppTheme.warningOrange;
-      case TaskPriority.urgent:
-        return AppTheme.dangerRed;
     }
   }
 }

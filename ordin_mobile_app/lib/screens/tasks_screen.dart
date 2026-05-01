@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import '../models/task.dart';
 import '../data/task_repository.dart';
 import '../data/hive_storage_service.dart';
-import '../theme/app_theme.dart';
+import '../theme/premium_colors.dart';
+import '../theme/premium_typography.dart';
+import '../theme/premium_spacing.dart';
+import '../theme/premium_shadows.dart';
 import '../widgets/gradient_app_bar.dart';
 import '../widgets/task_form_screen.dart';
 
@@ -156,7 +159,7 @@ class _TasksScreenState extends State<TasksScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: Text('Subtasks', style: AppTheme.headingLarge),
+          title: Text('Subtasks', style: PremiumTypography.headingLarge),
           content: SizedBox(
             width: double.maxFinite,
             child: Column(
@@ -165,7 +168,7 @@ class _TasksScreenState extends State<TasksScreen> {
                 if (task.subtasks.isEmpty)
                   Padding(
                     padding: const EdgeInsets.all(20),
-                    child: Text('No subtasks yet', style: AppTheme.bodyMedium),
+                    child: Text('No subtasks yet', style: PremiumTypography.bodyMedium),
                   )
                 else
                   ...task.subtasks.map((subtask) => CheckboxListTile(
@@ -241,7 +244,7 @@ class _TasksScreenState extends State<TasksScreen> {
     final displayTasks = _filteredTasks;
     
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: PremiumColors.backgroundColor,
       appBar: GradientAppBar(
         title: 'Tasks',
         actions: [
@@ -264,16 +267,16 @@ class _TasksScreenState extends State<TasksScreen> {
                 // Stats Header
                 Container(
                   padding: const EdgeInsets.all(20),
-                  color: AppTheme.surfaceWhite,
+                  color: PremiumColors.surfaceWhite,
                   child: Column(
                     children: [
                       Row(
                         children: [
-                          Expanded(child: _buildStatCard('Total', '${_tasks.length}', Icons.list_rounded, AppTheme.primaryBlue)),
+                          Expanded(child: _buildStatCard('Total', '${_tasks.length}', Icons.list_rounded, PremiumColors.primary500)),
                           const SizedBox(width: 12),
-                          Expanded(child: _buildStatCard('Done', '$_completedCount', Icons.check_circle_rounded, AppTheme.successGreen)),
+                          Expanded(child: _buildStatCard('Done', '$_completedCount', Icons.check_circle_rounded, PremiumColors.success500)),
                           const SizedBox(width: 12),
-                          Expanded(child: _buildStatCard('Overdue', '$_overdueCount', Icons.warning_rounded, AppTheme.dangerRed)),
+                          Expanded(child: _buildStatCard('Overdue', '$_overdueCount', Icons.warning_rounded, PremiumColors.error500)),
                         ],
                       ),
                       const SizedBox(height: 16),
@@ -314,7 +317,7 @@ class _TasksScreenState extends State<TasksScreen> {
                           label: Text(_getFilterLabel(filter)),
                           selected: isSelected,
                           onSelected: (_) => setState(() => _currentFilter = filter),
-                          selectedColor: AppTheme.primaryBlue.withOpacity(0.2),
+                          selectedColor: PremiumColors.primary500.withOpacity(0.2),
                         ),
                       );
                     }).toList(),
@@ -336,9 +339,11 @@ class _TasksScreenState extends State<TasksScreen> {
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'tasks_fab',
         onPressed: _addTask,
-        backgroundColor: AppTheme.primaryBlue,
+        backgroundColor: PremiumColors.primary500,
+        elevation: 6,
+        highlightElevation: 10,
         icon: const Icon(Icons.add_rounded, color: Colors.white),
-        label: Text('Add Task', style: AppTheme.labelLarge.copyWith(color: Colors.white)),
+        label: Text('Add Task', style: PremiumTypography.labelLarge.copyWith(color: Colors.white)),
       ),
     );
   }
@@ -355,50 +360,85 @@ class _TasksScreenState extends State<TasksScreen> {
         children: [
           Icon(icon, size: 20, color: color),
           const SizedBox(height: 4),
-          Text(value, style: AppTheme.headingMedium.copyWith(color: color)),
-          Text(label, style: AppTheme.labelMedium),
+          Text(value, style: PremiumTypography.headingMedium.copyWith(color: color)),
+          Text(label, style: PremiumTypography.labelMedium),
         ],
       ),
     );
   }
 
   Widget _buildTaskCard(Task task) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceWhite,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: task.isOverdue ? AppTheme.dangerRed : 
-                 task.isDone ? AppTheme.successGreen.withOpacity(0.3) : 
-                 AppTheme.borderGray,
-          width: task.isOverdue || task.isDone ? 2 : 1,
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _toggleTask(task),
-          onLongPress: () => _editTask(task),
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOutCubic,
+      tween: Tween(begin: 0.0, end: 1.0),
+      builder: (context, value, child) {
+        return Transform.scale(
+          scale: 0.96 + (0.04 * value),
+          child: Opacity(
+            opacity: value,
+            child: child,
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: PremiumColors.surfaceWhite,
           borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
+          border: Border.all(
+            color: task.isOverdue ? PremiumColors.error500 : 
+                   task.isDone ? PremiumColors.success500.withOpacity(0.4) : 
+                   PremiumColors.gray300,
+            width: task.isOverdue || task.isDone ? 2 : 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: task.isOverdue 
+                  ? PremiumColors.error500.withOpacity(0.12)
+                  : task.isDone 
+                      ? PremiumColors.success500.withOpacity(0.1)
+                      : Colors.black.withOpacity(0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _toggleTask(task),
+            onLongPress: () => _editTask(task),
+            borderRadius: BorderRadius.circular(16),
+            splashColor: PremiumColors.primary500.withOpacity(0.1),
+            highlightColor: PremiumColors.primary500.withOpacity(0.05),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
                     // Checkbox
-                    Container(
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutBack,
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: task.isDone ? AppTheme.successGreen : Colors.transparent,
+                        color: task.isDone ? PremiumColors.success500 : Colors.transparent,
                         border: Border.all(
-                          color: task.isDone ? AppTheme.successGreen : AppTheme.borderGray,
+                          color: task.isDone ? PremiumColors.success500 : PremiumColors.gray300,
                           width: 2,
                         ),
+                        boxShadow: task.isDone ? [
+                          BoxShadow(
+                            color: PremiumColors.success500.withOpacity(0.3),
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
+                          ),
+                        ] : null,
                       ),
                       child: task.isDone ? const Icon(Icons.check_rounded, size: 16, color: Colors.white) : null,
                     ),
@@ -407,9 +447,9 @@ class _TasksScreenState extends State<TasksScreen> {
                     Expanded(
                       child: Text(
                         task.title,
-                        style: AppTheme.bodyLarge.copyWith(
+                        style: PremiumTypography.bodyLarge.copyWith(
                           decoration: task.isDone ? TextDecoration.lineThrough : null,
-                          color: task.isDone ? AppTheme.textSecondary : AppTheme.textPrimary,
+                          color: task.isDone ? PremiumColors.gray600 : PremiumColors.gray900,
                         ),
                       ),
                     ),
@@ -450,9 +490,9 @@ class _TasksScreenState extends State<TasksScreen> {
                         PopupMenuItem(
                           child: Row(
                             children: [
-                              Icon(Icons.delete, size: 18, color: AppTheme.dangerRed),
+                              Icon(Icons.delete, size: 18, color: PremiumColors.error500),
                               SizedBox(width: 8),
-                              Text('Delete', style: TextStyle(color: AppTheme.dangerRed)),
+                              Text('Delete', style: TextStyle(color: PremiumColors.error500)),
                             ],
                           ),
                           onTap: () => _deleteTask(task),
@@ -466,7 +506,7 @@ class _TasksScreenState extends State<TasksScreen> {
                   const SizedBox(height: 8),
                   Text(
                     task.description!,
-                    style: AppTheme.bodySmall.copyWith(color: AppTheme.textSecondary),
+                    style: PremiumTypography.bodySmall.copyWith(color: PremiumColors.gray600),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -482,37 +522,45 @@ class _TasksScreenState extends State<TasksScreen> {
                         _buildChip(
                           _formatDate(task.dueDate!),
                           Icons.calendar_today,
-                          task.isOverdue ? AppTheme.dangerRed : 
-                          task.isDueToday ? AppTheme.warningOrange : 
-                          AppTheme.textSecondary,
+                          task.isOverdue ? PremiumColors.error500 : 
+                          task.isDueToday ? PremiumColors.warning500 : 
+                          PremiumColors.gray600,
                         ),
                       if (task.subtasks.isNotEmpty)
                         _buildChip(
                           '${task.completedSubtasks}/${task.subtasks.length}',
                           Icons.checklist,
-                          AppTheme.primaryBlue,
+                          PremiumColors.primary500,
                         ),
-                      ...task.tags.map((tag) => _buildChip(tag, Icons.tag, AppTheme.primaryBlue)),
+                      ...task.tags.map((tag) => _buildChip(tag, Icons.tag, PremiumColors.primary500)),
                     ],
                   ),
                 ],
                 // Subtask progress
                 if (task.subtasks.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: task.subtaskProgress,
-                      backgroundColor: AppTheme.borderGray,
-                      valueColor: AlwaysStoppedAnimation(AppTheme.successGreen),
-                      minHeight: 4,
-                    ),
+                  TweenAnimationBuilder<double>(
+                    duration: const Duration(milliseconds: 600),
+                    curve: Curves.easeOutCubic,
+                    tween: Tween(begin: 0.0, end: task.subtaskProgress),
+                    builder: (context, value, child) {
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: value,
+                          backgroundColor: PremiumColors.gray300,
+                          valueColor: AlwaysStoppedAnimation(PremiumColors.success500),
+                          minHeight: 4,
+                        ),
+                      );
+                    },
                   ),
                 ],
               ],
             ),
           ),
         ),
+      ),
       ),
     );
   }
@@ -529,7 +577,7 @@ class _TasksScreenState extends State<TasksScreen> {
         children: [
           Icon(icon, size: 12, color: color),
           const SizedBox(width: 4),
-          Text(label, style: AppTheme.labelMedium.copyWith(color: color)),
+          Text(label, style: PremiumTypography.labelMedium.copyWith(color: color)),
         ],
       ),
     );
@@ -543,15 +591,15 @@ class _TasksScreenState extends State<TasksScreen> {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AppTheme.primaryBlue.withOpacity(0.08),
+              color: PremiumColors.primary500.withOpacity(0.08),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.task_alt_rounded, size: 64, color: AppTheme.primaryBlue.withOpacity(0.6)),
+            child: Icon(Icons.task_alt_rounded, size: 64, color: PremiumColors.primary500.withOpacity(0.6)),
           ),
           const SizedBox(height: 24),
-          Text(_getEmptyStateTitle(), style: AppTheme.headingLarge),
+          Text(_getEmptyStateTitle(), style: PremiumTypography.headingLarge),
           const SizedBox(height: 8),
-          Text(_getEmptyStateMessage(), style: AppTheme.bodyMedium),
+          Text(_getEmptyStateMessage(), style: PremiumTypography.bodyMedium),
         ],
       ),
     );
@@ -583,9 +631,9 @@ class _TasksScreenState extends State<TasksScreen> {
 
   Color _getPriorityColor(TaskPriority priority) {
     switch (priority) {
-      case TaskPriority.high: return AppTheme.dangerRed;
-      case TaskPriority.medium: return AppTheme.warningOrange;
-      case TaskPriority.low: return AppTheme.successGreen;
+      case TaskPriority.high: return PremiumColors.error500;
+      case TaskPriority.medium: return PremiumColors.warning500;
+      case TaskPriority.low: return PremiumColors.success500;
     }
   }
 

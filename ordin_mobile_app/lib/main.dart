@@ -35,6 +35,7 @@ class MyApp extends StatelessWidget {
       title: 'Ordin',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.theme,
+      themeMode: ThemeMode.light,
       home: const MainScreen(),
     );
   }
@@ -68,9 +69,9 @@ class _MainScreenState extends State<MainScreen> {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 16,
+              offset: const Offset(0, -4),
             ),
           ],
         ),
@@ -78,25 +79,32 @@ class _MainScreenState extends State<MainScreen> {
           currentIndex: _currentIndex,
           onTap: (index) => setState(() => _currentIndex = index),
           type: BottomNavigationBarType.fixed,
+          elevation: 0,
+          backgroundColor: Colors.white,
+          selectedItemColor: AppTheme.primaryBlue,
+          unselectedItemColor: AppTheme.textTertiary,
+          selectedFontSize: 12,
+          unselectedFontSize: 11,
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.home_rounded),
-              activeIcon: Icon(Icons.home_rounded),
+              activeIcon: Icon(Icons.home_rounded, size: 28),
               label: 'Today',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.check_circle_outline_rounded),
-              activeIcon: Icon(Icons.check_circle_rounded),
+              activeIcon: Icon(Icons.check_circle_rounded, size: 28),
               label: 'Tasks',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.auto_awesome_rounded),
-              activeIcon: Icon(Icons.auto_awesome_rounded),
+              icon: Icon(Icons.auto_awesome_outlined),
+              activeIcon: Icon(Icons.auto_awesome_rounded, size: 28),
               label: 'Habits',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.apps_rounded),
-              activeIcon: Icon(Icons.apps_rounded),
+              icon: Icon(Icons.apps_outlined),
+              activeIcon: Icon(Icons.apps_rounded, size: 28),
               label: 'More',
             ),
           ],

@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import '../models/habit.dart';
 import '../data/habit_repository.dart';
 import '../data/hive_storage_service.dart';
-import '../theme/app_theme.dart';
+import '../theme/premium_colors.dart';
+import '../theme/premium_typography.dart';
+import '../theme/premium_spacing.dart';
+import '../theme/premium_shadows.dart';
 import '../widgets/gradient_app_bar.dart';
 import '../widgets/habit_form_screen.dart';
 
@@ -80,7 +83,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(habit.name, style: AppTheme.headingLarge),
+        title: Text(habit.name, style: PremiumTypography.headingLarge),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -92,9 +95,9 @@ class _HabitsScreenState extends State<HabitsScreen> {
             _buildStatRow('This Week', '${habit.completedDaysThisWeek}/7 days', Icons.calendar_today),
             if (habit.description != null) ...[
               const SizedBox(height: 16),
-              Text('Description', style: AppTheme.labelLarge),
+              Text('Description', style: PremiumTypography.labelLarge),
               const SizedBox(height: 4),
-              Text(habit.description!, style: AppTheme.bodyMedium),
+              Text(habit.description!, style: PremiumTypography.bodyMedium),
             ],
           ],
         ),
@@ -113,10 +116,10 @@ class _HabitsScreenState extends State<HabitsScreen> {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: AppTheme.primaryBlue),
+          Icon(icon, size: 20, color: PremiumColors.primary500),
           const SizedBox(width: 12),
-          Expanded(child: Text(label, style: AppTheme.bodyMedium)),
-          Text(value, style: AppTheme.labelLarge.copyWith(color: AppTheme.primaryBlue)),
+          Expanded(child: Text(label, style: PremiumTypography.bodyMedium)),
+          Text(value, style: PremiumTypography.labelLarge.copyWith(color: PremiumColors.primary500)),
         ],
       ),
     );
@@ -131,7 +134,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
     final displayHabits = _filteredHabits;
     
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: PremiumColors.backgroundColor,
       appBar: GradientAppBar(
         title: 'Habits',
       ),
@@ -141,17 +144,20 @@ class _HabitsScreenState extends State<HabitsScreen> {
               children: [
                 // Stats Header
                 Container(
-                  padding: const EdgeInsets.all(20),
-                  color: AppTheme.surfaceWhite,
+                  padding: const EdgeInsets.all(PremiumSpacing.screenPadding),
+                  decoration: BoxDecoration(
+                    color: PremiumColors.surfaceWhite,
+                    boxShadow: PremiumShadows.elevationLow,
+                  ),
                   child: Column(
                     children: [
                       Row(
                         children: [
-                          Expanded(child: _buildStatCard('Scheduled', '$_scheduledToday', Icons.event, AppTheme.primaryBlue)),
-                          const SizedBox(width: 12),
-                          Expanded(child: _buildStatCard('Done', '$_completedCount', Icons.check_circle, AppTheme.successGreen)),
-                          const SizedBox(width: 12),
-                          Expanded(child: _buildStatCard('Best', '$_longestStreak', Icons.local_fire_department, AppTheme.warningOrange)),
+                          Expanded(child: _buildStatCard('Scheduled', '$_scheduledToday', Icons.event, PremiumColors.primary500)),
+                          const SizedBox(width: PremiumSpacing.md),
+                          Expanded(child: _buildStatCard('Done', '$_completedCount', Icons.check_circle, PremiumColors.success500)),
+                          const SizedBox(width: PremiumSpacing.md),
+                          Expanded(child: _buildStatCard('Best', '$_longestStreak', Icons.local_fire_department, PremiumColors.warning500)),
                         ],
                       ),
                     ],
@@ -177,7 +183,12 @@ class _HabitsScreenState extends State<HabitsScreen> {
                             children: [
                               Icon(_getCategoryIcon(category), size: 16),
                               const SizedBox(width: 4),
-                              Text(_getCategoryLabel(category)),
+                              Flexible(
+                                child: Text(
+                                  _getCategoryLabel(category),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                             ],
                           ),
                           selected: _filterCategory == category,
@@ -203,27 +214,29 @@ class _HabitsScreenState extends State<HabitsScreen> {
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'habits_fab',
         onPressed: () => _addOrEditHabit(),
-        backgroundColor: AppTheme.successGreen,
+        backgroundColor: PremiumColors.success500,
+        elevation: 6,
+        highlightElevation: 10,
         icon: const Icon(Icons.add_rounded, color: Colors.white),
-        label: Text('Add Habit', style: AppTheme.labelLarge.copyWith(color: Colors.white)),
+        label: Text('Add Habit', style: PremiumTypography.labelLarge.copyWith(color: Colors.white)),
       ),
     );
   }
 
   Widget _buildStatCard(String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(PremiumSpacing.md),
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(PremiumSpacing.radiusMedium),
         border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 20),
+          Icon(icon, color: color, size: PremiumSpacing.iconSizeLarge),
           const SizedBox(height: 4),
-          Text(value, style: AppTheme.headingMedium.copyWith(color: color)),
-          Text(label, style: AppTheme.labelMedium),
+          Text(value, style: PremiumTypography.headingMedium.copyWith(color: color)),
+          Text(label, style: PremiumTypography.labelMedium),
         ],
       ),
     );
@@ -232,45 +245,77 @@ class _HabitsScreenState extends State<HabitsScreen> {
   Widget _buildHabitCard(Habit habit) {
     final isScheduled = habit.isScheduledForToday();
     
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceWhite,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: habit.isDoneToday ? AppTheme.successGreen.withOpacity(0.3) : 
-                 !isScheduled ? AppTheme.borderGray.withOpacity(0.5) :
-                 AppTheme.borderGray,
-          width: habit.isDoneToday ? 2 : 1,
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOutCubic,
+      tween: Tween(begin: 0.0, end: 1.0),
+      builder: (context, value, child) {
+        return Transform.scale(
+          scale: 0.96 + (0.04 * value),
+          child: Opacity(
+            opacity: value,
+            child: child,
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: PremiumColors.surfaceWhite,
+          borderRadius: BorderRadius.circular(PremiumSpacing.radiusLarge),
+          border: Border.all(
+            color: habit.isDoneToday ? PremiumColors.success500.withOpacity(0.4) : 
+                   !isScheduled ? PremiumColors.gray300.withOpacity(0.5) :
+                   PremiumColors.gray300,
+            width: habit.isDoneToday ? 2 : 1,
+          ),
+          boxShadow: !isScheduled ? [] : [
+            BoxShadow(
+              color: habit.isDoneToday 
+                  ? PremiumColors.success500.withOpacity(0.12)
+                  : Colors.black.withOpacity(0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        boxShadow: !isScheduled ? [] : null,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: isScheduled ? () => _toggleHabit(habit) : null,
-          onLongPress: () => _showHabitStats(habit),
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: isScheduled ? () => _toggleHabit(habit) : null,
+            onLongPress: () => _showHabitStats(habit),
+            borderRadius: BorderRadius.circular(PremiumSpacing.radiusLarge),
+            splashColor: PremiumColors.success500.withOpacity(0.1),
+            highlightColor: PremiumColors.success500.withOpacity(0.05),
+            child: Padding(
+              padding: const EdgeInsets.all(PremiumSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
                     // Checkbox
-                    Container(
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutBack,
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: habit.isDoneToday ? AppTheme.successGreen : Colors.transparent,
+                        color: habit.isDoneToday ? PremiumColors.success500 : Colors.transparent,
                         border: Border.all(
-                          color: habit.isDoneToday ? AppTheme.successGreen : 
-                                 !isScheduled ? AppTheme.borderGray.withOpacity(0.5) :
-                                 AppTheme.borderGray,
+                          color: habit.isDoneToday ? PremiumColors.success500 : 
+                                 !isScheduled ? PremiumColors.gray300.withOpacity(0.5) :
+                                 PremiumColors.gray300,
                           width: 2,
                         ),
+                        boxShadow: habit.isDoneToday ? [
+                          BoxShadow(
+                            color: PremiumColors.success500.withOpacity(0.3),
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
+                          ),
+                        ] : null,
                       ),
                       child: habit.isDoneToday
                           ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
@@ -284,31 +329,49 @@ class _HabitsScreenState extends State<HabitsScreen> {
                         children: [
                           Text(
                             habit.name,
-                            style: AppTheme.bodyLarge.copyWith(
+                            style: PremiumTypography.bodyLarge.copyWith(
                               decoration: habit.isDoneToday ? TextDecoration.lineThrough : null,
-                              color: !isScheduled ? AppTheme.textSecondary :
-                                     habit.isDoneToday ? AppTheme.textSecondary : 
-                                     AppTheme.textPrimary,
+                              color: !isScheduled ? PremiumColors.gray600 :
+                                     habit.isDoneToday ? PremiumColors.gray600 : 
+                                     PremiumColors.gray900,
                             ),
                           ),
                           if (!isScheduled)
-                            Text('Not scheduled today', style: AppTheme.labelMedium.copyWith(color: AppTheme.textSecondary)),
+                            Text('Not scheduled today', style: PremiumTypography.labelMedium.copyWith(color: PremiumColors.gray600)),
                         ],
                       ),
                     ),
                     // Streak
-                    Container(
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        color: AppTheme.warningOrange.withOpacity(0.1),
+                        color: PremiumColors.warning500.withOpacity(habit.streak > 0 ? 0.15 : 0.08),
                         borderRadius: BorderRadius.circular(12),
+                        boxShadow: habit.streak > 0 ? [
+                          BoxShadow(
+                            color: PremiumColors.warning500.withOpacity(0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ] : null,
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.local_fire_department_rounded, size: 14, color: AppTheme.warningOrange),
+                          Icon(
+                            Icons.local_fire_department_rounded, 
+                            size: 14, 
+                            color: PremiumColors.warning500,
+                          ),
                           const SizedBox(width: 4),
-                          Text('${habit.streak}', style: AppTheme.labelMedium.copyWith(color: AppTheme.warningOrange)),
+                          Text(
+                            '${habit.streak}', 
+                            style: PremiumTypography.labelMedium.copyWith(
+                              color: PremiumColors.warning500,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -331,9 +394,9 @@ class _HabitsScreenState extends State<HabitsScreen> {
                         PopupMenuItem(
                           child: Row(
                             children: [
-                              Icon(Icons.delete, size: 18, color: AppTheme.dangerRed),
+                              Icon(Icons.delete, size: 18, color: PremiumColors.error500),
                               SizedBox(width: 8),
-                              Text('Delete', style: TextStyle(color: AppTheme.dangerRed)),
+                              Text('Delete', style: TextStyle(color: PremiumColors.error500)),
                             ],
                           ),
                           onTap: () => _deleteHabit(habit),
@@ -349,10 +412,10 @@ class _HabitsScreenState extends State<HabitsScreen> {
                   runSpacing: 8,
                   children: [
                     _buildChip(_getCategoryLabel(habit.category), _getCategoryIcon(habit.category), _getCategoryColor(habit.category)),
-                    _buildChip(_getFrequencyLabel(habit.frequency), Icons.repeat, AppTheme.primaryBlue),
+                    _buildChip(_getFrequencyLabel(habit.frequency), Icons.repeat, PremiumColors.primary500),
                     if (habit.reminderTime != null)
-                      _buildChip(habit.reminderTime!, Icons.alarm, AppTheme.warningOrange),
-                    _buildChip('${(habit.successRate * 100).toStringAsFixed(0)}%', Icons.trending_up, AppTheme.successGreen),
+                      _buildChip(habit.reminderTime!, Icons.alarm, PremiumColors.warning500),
+                    _buildChip('${(habit.successRate * 100).toStringAsFixed(0)}%', Icons.trending_up, PremiumColors.success500),
                   ],
                 ),
               ],
@@ -360,22 +423,31 @@ class _HabitsScreenState extends State<HabitsScreen> {
           ),
         ),
       ),
+      ),
     );
   }
 
   Widget _buildChip(String label, IconData icon, Color color) {
     return Container(
+      constraints: const BoxConstraints(maxWidth: 120), // Prevent overflow
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(PremiumSpacing.radiusSmall),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 12, color: color),
           const SizedBox(width: 4),
-          Text(label, style: AppTheme.labelMedium.copyWith(color: color)),
+          Flexible(
+            child: Text(
+              label,
+              style: PremiumTypography.labelMedium.copyWith(color: color),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
         ],
       ),
     );
@@ -389,15 +461,15 @@ class _HabitsScreenState extends State<HabitsScreen> {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AppTheme.successGreen.withOpacity(0.08),
+              color: PremiumColors.success500.withOpacity(0.08),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.auto_awesome_rounded, size: 64, color: AppTheme.successGreen.withOpacity(0.6)),
+            child: Icon(Icons.auto_awesome_rounded, size: 64, color: PremiumColors.success500.withOpacity(0.6)),
           ),
           const SizedBox(height: 24),
-          Text(_filterCategory == null ? 'No habits yet' : 'No habits in this category', style: AppTheme.headingLarge),
+          Text(_filterCategory == null ? 'No habits yet' : 'No habits in this category', style: PremiumTypography.headingLarge),
           const SizedBox(height: 8),
-          Text('Build consistency with daily habits', style: AppTheme.bodyMedium),
+          Text('Build consistency with daily habits', style: PremiumTypography.bodyMedium),
         ],
       ),
     );
@@ -429,13 +501,13 @@ class _HabitsScreenState extends State<HabitsScreen> {
 
   Color _getCategoryColor(HabitCategory category) {
     switch (category) {
-      case HabitCategory.morning: return AppTheme.warningOrange;
-      case HabitCategory.afternoon: return AppTheme.primaryBlue;
-      case HabitCategory.evening: return AppTheme.infoBlue;
-      case HabitCategory.anytime: return AppTheme.textSecondary;
-      case HabitCategory.health: return AppTheme.dangerRed;
-      case HabitCategory.productivity: return AppTheme.successGreen;
-      case HabitCategory.personal: return AppTheme.primaryBlue;
+      case HabitCategory.morning: return PremiumColors.warning500;
+      case HabitCategory.afternoon: return PremiumColors.primary500;
+      case HabitCategory.evening: return PremiumColors.info500;
+      case HabitCategory.anytime: return PremiumColors.gray600;
+      case HabitCategory.health: return PremiumColors.error500;
+      case HabitCategory.productivity: return PremiumColors.success500;
+      case HabitCategory.personal: return PremiumColors.primary500;
     }
   }
 
