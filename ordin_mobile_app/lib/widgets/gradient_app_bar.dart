@@ -25,7 +25,6 @@ class GradientAppBar extends StatelessWidget implements PreferredSizeWidget {
           colors: [
             Color(0xFF0EA5E9), // Sky Blue
             Color(0xFF0284C7), // Deep Sky Blue
-            Color(0xFF06B6D4), // Cyan
           ],
         ),
       ),

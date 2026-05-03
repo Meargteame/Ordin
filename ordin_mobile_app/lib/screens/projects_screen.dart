@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart';
 import '../models/project.dart';
 import '../data/project_repository.dart';
 import '../data/hive_storage_service.dart';
-import '../theme/app_theme.dart';
-import '../widgets/gradient_app_bar.dart';
 
 class ProjectsScreen extends StatefulWidget {
   const ProjectsScreen({super.key});
@@ -35,250 +32,196 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   Future<void> _loadProjects() async {
     final projects = await _projectRepo.loadProjects();
     setState(() {
-      _projects = projects;
+      _projects = projects.where((p) => p.status != ProjectStatus.completed).toList();
       _isLoading = false;
     });
   }
 
-  Future<void> _addProject() async {
-    final titleController = TextEditingController();
-    final descController = TextEditingController();
-    final categoryController = TextEditingController();
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('New Project', style: AppTheme.headingLarge),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                autofocus: true,
-                style: AppTheme.bodyLarge,
-                decoration: InputDecoration(
-                  labelText: 'Title',
-                  labelStyle: AppTheme.labelMedium,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: descController,
-                style: AppTheme.bodyLarge,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  labelText: 'Description',
-                  labelStyle: AppTheme.labelMedium,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: categoryController,
-                style: AppTheme.bodyLarge,
-                decoration: InputDecoration(
-                  labelText: 'Category',
-                  labelStyle: AppTheme.labelMedium,
-                  hintText: 'e.g., Work, Personal, Learning',
-                  hintStyle: AppTheme.bodyMedium,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 2),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: AppTheme.labelLarge.copyWith(color: AppTheme.textSecondary)),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppTheme.primaryBlue,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: Text('Add', style: AppTheme.labelLarge.copyWith(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-
-    if (result == true && titleController.text.isNotEmpty) {
-      final project = Project(
-        id: const Uuid().v4(),
-        title: titleController.text,
-        description: descController.text,
-        status: ProjectStatus.planning,
-        category: categoryController.text.isEmpty ? 'General' : categoryController.text,
-        progress: 0.0,
-        createdDate: DateTime.now(),
-      );
-      await _projectRepo.saveProject(project);
-      await _loadProjects();
-    }
-  }
-
-  Future<void> _deleteProject(Project project) async {
-    await _projectRepo.deleteProject(project.id);
-    await _loadProjects();
-  }
-
-  int get _activeCount => _projects.where((p) => p.status == ProjectStatus.active).length;
-  int get _completedCount => _projects.where((p) => p.status == ProjectStatus.completed).length;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: GradientAppBar(
-        title: 'Projects',
+      backgroundColor: const Color(0xFFF8F9FA),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFF8F9FA),
+        elevation: 0,
+        title: const Text(
+          'Projects',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF1F2937),
+          ),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF1F2937)),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Container(
+          : _projects.isEmpty
+              ? _buildEmptyState()
+              : ListView.builder(
                   padding: const EdgeInsets.all(20),
-                  color: AppTheme.surfaceWhite,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard('Total', '${_projects.length}', Icons.folder_rounded, AppTheme.primaryBlue),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildStatCard('Active', '$_activeCount', Icons.play_circle_rounded, AppTheme.warningOrange),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildStatCard('Done', '$_completedCount', Icons.check_circle_rounded, AppTheme.successGreen),
-                      ),
-                    ],
-                  ),
+                  itemCount: _projects.length,
+                  itemBuilder: (context, index) => _buildProjectCard(_projects[index]),
                 ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: _projects.isEmpty
-                      ? _buildEmptyState()
-                      : ListView.builder(
-                          padding: const EdgeInsets.all(20),
-                          itemCount: _projects.length,
-                          itemBuilder: (context, index) => _buildProjectCard(_projects[index]),
-                        ),
-                ),
-              ],
-            ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'projects_fab',
-        onPressed: _addProject,
-        backgroundColor: AppTheme.primaryBlue,
-        icon: const Icon(Icons.add_rounded, color: Colors.white),
-        label: Text('Add Project', style: AppTheme.labelLarge.copyWith(color: Colors.white)),
-      ),
-    );
-  }
-
-  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
-          Text(value, style: AppTheme.headingLarge.copyWith(color: color)),
-          const SizedBox(height: 2),
-          Text(label, style: AppTheme.labelMedium),
-        ],
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {},
+        backgroundColor: const Color(0xFF2563EB),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
 
   Widget _buildProjectCard(Project project) {
-    final statusColor = _statusColor(project.status);
-
+    // Simplified - just show progress
+    final progress = project.progress;
+    
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceWhite,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.borderGray),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(_statusName(project.status), style: AppTheme.labelMedium.copyWith(color: statusColor)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEC4899).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppTheme.infoBlue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(project.category, style: AppTheme.labelMedium.copyWith(color: AppTheme.infoBlue)),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, color: AppTheme.dangerRed),
-                  onPressed: () => _deleteProject(project),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(project.title, style: AppTheme.headingMedium),
-            if (project.description.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text(project.description, style: AppTheme.bodyMedium),
-            ],
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: project.progress,
-                      backgroundColor: AppTheme.borderGray,
-                      valueColor: AlwaysStoppedAnimation(statusColor),
-                      minHeight: 6,
+                child: const Icon(Icons.folder, color: Color(0xFFEC4899), size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      project.title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1F2937),
+                      ),
                     ),
-                  ),
+                    if (project.description != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        project.description!,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF6B7280),
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Text('${(project.progress * 100).toInt()}%', style: AppTheme.labelMedium.copyWith(color: statusColor)),
-              ],
-            ),
-          ],
+              ),
+              _buildStatusBadge(project.status),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${(progress * 100).toInt()}% complete',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
+                        Text(
+                          '${(progress * 100).toInt()}%',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF2563EB),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        backgroundColor: const Color(0xFFE5E7EB),
+                        valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
+                        minHeight: 6,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(ProjectStatus status) {
+    Color color;
+    String label;
+    
+    switch (status) {
+      case ProjectStatus.planning:
+        color = const Color(0xFF6B7280);
+        label = 'Planning';
+        break;
+      case ProjectStatus.active:
+        color = const Color(0xFF2563EB);
+        label = 'Active';
+        break;
+      case ProjectStatus.onHold:
+        color = const Color(0xFFF59E0B);
+        label = 'On Hold';
+        break;
+      case ProjectStatus.completed:
+        color = const Color(0xFF10B981);
+        label = 'Completed';
+        break;
+      case ProjectStatus.archived:
+        color = const Color(0xFF9CA3AF);
+        label = 'Archived';
+        break;
+    }
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: color,
         ),
       ),
     );
@@ -286,43 +229,33 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryBlue.withOpacity(0.08),
-              shape: BoxShape.circle,
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.folder_outlined, size: 80, color: Colors.grey[300]),
+            const SizedBox(height: 24),
+            const Text(
+              'No projects yet',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF6B7280),
+              ),
             ),
-            child: Icon(Icons.folder_rounded, size: 64, color: AppTheme.primaryBlue.withOpacity(0.6)),
-          ),
-          const SizedBox(height: 24),
-          Text('No projects yet', style: AppTheme.headingLarge),
-          const SizedBox(height: 8),
-          Text('Create your first project to get started', style: AppTheme.bodyMedium),
-        ],
+            const SizedBox(height: 8),
+            const Text(
+              'Create your first project to organize tasks',
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF9CA3AF),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
-  }
-
-  String _statusName(ProjectStatus status) {
-    switch (status) {
-      case ProjectStatus.planning: return 'Planning';
-      case ProjectStatus.active: return 'Active';
-      case ProjectStatus.onHold: return 'On Hold';
-      case ProjectStatus.completed: return 'Completed';
-      case ProjectStatus.archived: return 'Archived';
-    }
-  }
-
-  Color _statusColor(ProjectStatus status) {
-    switch (status) {
-      case ProjectStatus.planning: return AppTheme.infoBlue;
-      case ProjectStatus.active: return AppTheme.warningOrange;
-      case ProjectStatus.onHold: return AppTheme.textSecondary;
-      case ProjectStatus.completed: return AppTheme.successGreen;
-      case ProjectStatus.archived: return AppTheme.textTertiary;
-    }
   }
 }

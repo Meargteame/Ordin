@@ -91,53 +91,35 @@ class _TodayScreenState extends State<TodayScreen> {
   double get _completionRate => _totalItems == 0 ? 0 : _completedItems / _totalItems;
   int get _longestStreak => _habits.isEmpty ? 0 : _habits.map((h) => h.streak).reduce(math.max);
 
-  String _getGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    return 'Good Evening';
-  }
-
-  String _getMotivation() {
-    if (_completionRate >= 0.8) return 'Outstanding progress!';
-    if (_completionRate >= 0.5) return 'Keep the momentum going!';
-    if (_completionRate > 0) return 'You\'re making progress!';
-    return 'Let\'s make today count!';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: const Color(0xFFF8F9FA),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _loadData,
-              color: const Color(0xFF0EA5E9),
+              color: const Color(0xFF2563EB),
               child: CustomScrollView(
                 physics: const BouncingScrollPhysics(),
                 slivers: [
-                  _buildPremiumHeader(),
+                  _buildAppBar(),
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+                      padding: const EdgeInsets.all(20),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildQuickStats(),
+                          _buildDailySummary(),
                           const SizedBox(height: 24),
-                          _buildLifeAreasGrid(),
+                          _buildStatsCards(),
                           const SizedBox(height: 24),
-                          if (_todayTasks.isNotEmpty) ...[
-                            _buildTasksSection(),
-                            const SizedBox(height: 24),
-                          ],
-                          if (_habits.isNotEmpty) ...[
-                            _buildHabitsSection(),
-                            const SizedBox(height: 24),
-                          ],
-                          if (_todayTasks.isEmpty && _habits.isEmpty) 
-                            _buildPremiumEmptyState(),
+                          _buildCircularProgress(),
+                          const SizedBox(height: 24),
+                          _buildLifeAreasSection(),
+                          const SizedBox(height: 24),
+                          _buildTodaysFocus(),
+                          const SizedBox(height: 100),
                         ],
                       ),
                     ),
@@ -148,136 +130,95 @@ class _TodayScreenState extends State<TodayScreen> {
     );
   }
 
-  Widget _buildPremiumHeader() {
+  Widget _buildAppBar() {
     return SliverAppBar(
-      expandedHeight: 140,
-      floating: false,
-      pinned: true,
-      backgroundColor: const Color(0xFF0EA5E9),
-      surfaceTintColor: Colors.transparent,
+      floating: true,
+      backgroundColor: const Color(0xFFF8F9FA),
       elevation: 0,
-      flexibleSpace: FlexibleSpaceBar(
-        background: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF0EA5E9), // Sky Blue
-                Color(0xFF0284C7), // Deep Sky Blue
-                Color(0xFF06B6D4), // Cyan
-              ],
-            ),
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _getGreeting(),
-                              style: const TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                                height: 1.1,
-                                letterSpacing: -1,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              DateFormat('EEEE, MMMM d').format(DateTime.now()),
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white.withOpacity(0.85),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      _buildProgressRing(),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProgressRing() {
-    return Container(
-      width: 60,
-      height: 60,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white.withOpacity(0.15),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.3),
-          width: 2,
-        ),
-      ),
-      child: Stack(
+      toolbarHeight: 70,
+      title: Row(
         children: [
-          CustomPaint(
-            size: const Size(60, 60),
-            painter: _CircularProgressPainter(_completionRate),
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: const Color(0xFF2563EB).withOpacity(0.1),
+            child: const Icon(Icons.person, color: Color(0xFF2563EB), size: 20),
           ),
-          Center(
-            child: Text(
-              '${(_completionRate * 100).toInt()}%',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                letterSpacing: -0.5,
-              ),
+          const SizedBox(width: 12),
+          const Text(
+            'Good morning, Alex',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1F2937),
             ),
           ),
         ],
       ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.calendar_today_outlined, color: Color(0xFF6B7280)),
+          onPressed: () {},
+        ),
+        IconButton(
+          icon: const Icon(Icons.notifications_outlined, color: Color(0xFF6B7280)),
+          onPressed: () {},
+        ),
+      ],
     );
   }
 
-  Widget _buildQuickStats() {
+  Widget _buildDailySummary() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          DateFormat('EEEE, MMMM d').format(DateTime.now()).toUpperCase(),
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF6B7280),
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Your daily summary',
+          style: TextStyle(
+            fontSize: 14,
+            color: Color(0xFF9CA3AF),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatsCards() {
     return Row(
       children: [
         Expanded(
           child: _buildStatCard(
-            'Tasks',
-            '$_completedTasks/${_todayTasks.length}',
+            'TASKS',
+            '$_completedTasks / ${_todayTasks.length}',
             Icons.check_circle_outline,
-            const Color(0xFF0EA5E9),
+            const Color(0xFF2563EB),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _buildStatCard(
-            'Habits',
-            '$_completedHabits/${_habits.length}',
-            Icons.auto_awesome_outlined,
-            const Color(0xFF06B6D4),
+            'HABITS',
+            '$_completedHabits / ${_habits.length}',
+            Icons.refresh,
+            const Color(0xFF2563EB),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _buildStatCard(
-            'Streak',
-            '$_longestStreak🔥',
+            'STREAK',
+            '$_longestStreak Days',
             Icons.local_fire_department_outlined,
-            const Color(0xFFF59E0B),
+            const Color(0xFFEF4444),
           ),
         ),
       ],
@@ -289,647 +230,343 @@ class _TodayScreenState extends State<TodayScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: color.withOpacity(0.2),
-          width: 1.5,
-        ),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF0F172A),
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLifeAreasGrid() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 4,
-              height: 24,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF0EA5E9), Color(0xFF06B6D4)],
-                ),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'Life Areas',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF0F172A),
-                letterSpacing: -0.8,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 4,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          children: [
-            _buildLifeAreaCard('Goals', Icons.flag_outlined, const Color(0xFF0EA5E9)),
-            _buildLifeAreaCard('Projects', Icons.folder_outlined, const Color(0xFF06B6D4)),
-            _buildLifeAreaCard('Time', Icons.timer_outlined, const Color(0xFFF59E0B)),
-            _buildLifeAreaCard('Calendar', Icons.calendar_today_outlined, const Color(0xFF10B981)),
-            _buildLifeAreaCard('Notes', Icons.note_outlined, const Color(0xFF8B5CF6)),
-            _buildLifeAreaCard('Journal', Icons.book_outlined, const Color(0xFF06B6D4)),
-            _buildLifeAreaCard('Health', Icons.favorite_outline, const Color(0xFFEF4444)),
-            _buildLifeAreaCard('Finance', Icons.account_balance_wallet_outlined, const Color(0xFF10B981)),
-            _buildLifeAreaCard('People', Icons.people_outline, const Color(0xFFF59E0B)),
-            _buildLifeAreaCard('Learning', Icons.school_outlined, const Color(0xFF8B5CF6)),
-            _buildLifeAreaCard('Analytics', Icons.insights_outlined, const Color(0xFF0EA5E9)),
-            _buildLifeAreaCard('Settings', Icons.settings_outlined, const Color(0xFF64748B)),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLifeAreaCard(String label, IconData icon, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: color.withOpacity(0.2),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            // Navigate to respective screen
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('$label - Coming soon'),
-                duration: const Duration(seconds: 1),
-              ),
-            );
-          },
-          borderRadius: BorderRadius.circular(16),
-          splashColor: color.withOpacity(0.1),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: color, size: 24),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF64748B),
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1F2937),
+            ),
           ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF9CA3AF),
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCircularProgress() {
+    return Center(
+      child: SizedBox(
+        width: 160,
+        height: 160,
+        child: Stack(
+          children: [
+            CustomPaint(
+              size: const Size(160, 160),
+              painter: _CircularProgressPainter(_completionRate),
+            ),
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '${(_completionRate * 100).toInt()}%',
+                    style: const TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ),
+                  const Text(
+                    'COMPLETED',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF9CA3AF),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildDailyOverview() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF0EA5E9).withOpacity(0.08),
-            const Color(0xFF06B6D4).withOpacity(0.08),
+  Widget _buildLifeAreasSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Life Areas',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF1F2937),
+          ),
+        ),
+        const SizedBox(height: 16),
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 3,
+          children: [
+            _buildLifeAreaItem('Goals', Icons.flag_outlined, const Color(0xFF8B5CF6)),
+            _buildLifeAreaItem('Projects', Icons.folder_outlined, const Color(0xFFEC4899)),
+            _buildLifeAreaItem('Finance', Icons.attach_money, const Color(0xFF10B981)),
+            _buildLifeAreaItem('Health', Icons.favorite_outline, const Color(0xFFEF4444)),
+            _buildLifeAreaItem('Journal', Icons.book_outlined, const Color(0xFFF59E0B)),
+            _buildLifeAreaItem('Notes', Icons.note_outlined, const Color(0xFF6B7280)),
+            _buildLifeAreaItem('Learning', Icons.school_outlined, const Color(0xFF3B82F6)),
+            _buildLifeAreaItem('Relationships', Icons.people_outline, const Color(0xFFEC4899)),
           ],
         ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFF0EA5E9).withOpacity(0.15),
-          width: 1.5,
-        ),
+      ],
+    );
+  }
+
+  Widget _buildLifeAreaItem(String label, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF0EA5E9), Color(0xFF06B6D4)],
-              ),
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF0EA5E9).withOpacity(0.3),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(
-              Icons.emoji_events_outlined,
-              color: Colors.white,
-              size: 24,
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1F2937),
+              ),
             ),
           ),
-          const SizedBox(width: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTodaysFocus() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Today\'s Focus',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1F2937),
+              ),
+            ),
+            Text(
+              '${_todayTasks.length} TASKS REMAINING',
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2563EB),
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (_todayTasks.isEmpty)
+          _buildEmptyState()
+        else
+          ..._todayTasks.take(5).map((task) => _buildTaskCard(task)),
+      ],
+    );
+  }
+
+  Widget _buildTaskCard(Task task) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: task.isDone ? const Color(0xFF10B981) : const Color(0xFFE5E7EB),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => _toggleTask(task),
+            child: Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: task.isDone ? const Color(0xFF2563EB) : Colors.transparent,
+                border: Border.all(
+                  color: task.isDone ? const Color(0xFF2563EB) : const Color(0xFFD1D5DB),
+                  width: 2,
+                ),
+              ),
+              child: task.isDone
+                  ? const Icon(Icons.check, size: 14, color: Colors.white)
+                  : null,
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _getMotivation(),
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF0F172A),
-                    height: 1.3,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '$_completedItems of $_totalItems completed today',
-                  style: const TextStyle(
+                  task.title,
+                  style: TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF64748B),
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
+                    color: task.isDone ? const Color(0xFF9CA3AF) : const Color(0xFF1F2937),
+                    decoration: task.isDone ? TextDecoration.lineThrough : null,
                   ),
                 ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTasksSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 4,
-              height: 24,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFF0EA5E9), Color(0xFF0284C7)],
-                ),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'Tasks',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF0F172A),
-                letterSpacing: -0.8,
-              ),
-            ),
-            const Spacer(),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0EA5E9).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '$_completedTasks/${_todayTasks.length}',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF0EA5E9),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        ..._todayTasks.map((task) => _buildPremiumTaskCard(task)),
-      ],
-    );
-  }
-
-  Widget _buildPremiumTaskCard(Task task) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: task.isDone 
-              ? const Color(0xFF10B981) 
-              : const Color(0xFFE2E8F0),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: task.isDone
-                ? const Color(0xFF10B981).withOpacity(0.1)
-                : Colors.black.withOpacity(0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _toggleTask(task),
-          borderRadius: BorderRadius.circular(16),
-          splashColor: const Color(0xFF0EA5E9).withOpacity(0.05),
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Row(
-              children: [
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: task.isDone
-                        ? const LinearGradient(
-                            colors: [Color(0xFF10B981), Color(0xFF059669)],
-                          )
-                        : null,
-                    border: Border.all(
-                      color: task.isDone 
-                          ? Colors.transparent 
-                          : const Color(0xFFCBD5E1),
-                      width: 2.5,
+                if (task.description != null && task.description!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    task.description!,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF9CA3AF),
                     ),
-                    boxShadow: task.isDone ? [
-                      BoxShadow(
-                        color: const Color(0xFF10B981).withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ] : null,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  child: task.isDone
-                      ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
-                      : null,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        task.title,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          decoration: task.isDone ? TextDecoration.lineThrough : null,
-                          decorationThickness: 2,
-                          color: task.isDone 
-                              ? const Color(0xFF94A3B8) 
-                              : const Color(0xFF0F172A),
-                          height: 1.4,
-                          letterSpacing: -0.2,
+                ],
+                if (task.tags.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    children: task.tags.take(2).map((tag) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF3F4F6),
+                          borderRadius: BorderRadius.circular(6),
                         ),
-                      ),
-                      if (task.description != null && task.description!.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          task.description!,
+                        child: Text(
+                          tag,
                           style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF94A3B8),
-                            height: 1.4,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                if (task.estimatedMinutes != null) ...[
-                  const SizedBox(width: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFF0EA5E9).withOpacity(0.1),
-                          const Color(0xFF06B6D4).withOpacity(0.1),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: const Color(0xFF0EA5E9).withOpacity(0.2),
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.schedule_rounded,
-                          size: 14,
-                          color: Color(0xFF0EA5E9),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${task.estimatedMinutes}m',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF0EA5E9),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF6B7280),
                           ),
                         ),
-                      ],
-                    ),
+                      );
+                    }).toList(),
                   ),
                 ],
               ],
             ),
           ),
-        ),
+          if (task.estimatedMinutes != null) ...[
+            const SizedBox(width: 8),
+            Row(
+              children: [
+                const Icon(Icons.schedule, size: 14, color: Color(0xFF9CA3AF)),
+                const SizedBox(width: 4),
+                Text(
+                  '${task.estimatedMinutes}m',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF6B7280),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
       ),
     );
   }
 
-  Widget _buildHabitsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 4,
-              height: 24,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFF38BDF8), Color(0xFF06B6D4)],
-                ),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'Habits',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF0F172A),
-                letterSpacing: -0.8,
-              ),
-            ),
-            const Spacer(),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFF06B6D4).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '$_completedHabits/${_habits.length}',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF06B6D4),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        ..._habits.map((habit) => _buildPremiumHabitCard(habit)),
-      ],
-    );
-  }
-
-  Widget _buildPremiumHabitCard(Habit habit) {
+  Widget _buildEmptyState() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: habit.isDoneToday 
-              ? const Color(0xFF10B981) 
-              : const Color(0xFFE2E8F0),
-          width: 1.5,
-        ),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: habit.isDoneToday
-                ? const Color(0xFF10B981).withOpacity(0.1)
-                : Colors.black.withOpacity(0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _toggleHabit(habit),
-          borderRadius: BorderRadius.circular(16),
-          splashColor: const Color(0xFF06B6D4).withOpacity(0.05),
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Row(
-              children: [
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: habit.isDoneToday
-                        ? const LinearGradient(
-                            colors: [Color(0xFF10B981), Color(0xFF059669)],
-                          )
-                        : null,
-                    border: Border.all(
-                      color: habit.isDoneToday 
-                          ? Colors.transparent 
-                          : const Color(0xFFCBD5E1),
-                      width: 2.5,
-                    ),
-                    boxShadow: habit.isDoneToday ? [
-                      BoxShadow(
-                        color: const Color(0xFF10B981).withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ] : null,
-                  ),
-                  child: habit.isDoneToday
-                      ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
-                      : null,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    habit.name,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      decoration: habit.isDoneToday ? TextDecoration.lineThrough : null,
-                      decorationThickness: 2,
-                      color: habit.isDoneToday 
-                          ? const Color(0xFF94A3B8) 
-                          : const Color(0xFF0F172A),
-                      height: 1.4,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                ),
-                if (habit.streak > 0) ...[
-                  const SizedBox(width: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
-                      ),
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFF59E0B).withOpacity(0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.local_fire_department_rounded,
-                          size: 16,
-                          color: Colors.white,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          '${habit.streak}',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPremiumEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 80),
+      child: Center(
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(28),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [
-                    const Color(0xFF0EA5E9).withOpacity(0.1),
-                    const Color(0xFF06B6D4).withOpacity(0.1),
-                  ],
-                ),
-                border: Border.all(
-                  color: const Color(0xFF0EA5E9).withOpacity(0.2),
-                  width: 2,
-                ),
-              ),
-              child: const Icon(
-                Icons.check_circle_rounded,
-                size: 64,
-                color: Color(0xFF0EA5E9),
-              ),
+            Icon(
+              Icons.check_circle_outline,
+              size: 48,
+              color: Colors.grey[300],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             const Text(
-              'All Clear',
+              'All tasks completed!',
               style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF0F172A),
-                letterSpacing: -0.8,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF6B7280),
               ),
             ),
             const SizedBox(height: 8),
             const Text(
-              'Ready to conquer the day',
+              'Great job! You\'re all caught up.',
               style: TextStyle(
-                fontSize: 16,
-                color: Color(0xFF64748B),
-                fontWeight: FontWeight.w500,
+                fontSize: 14,
+                color: Color(0xFF9CA3AF),
               ),
             ),
           ],
@@ -939,7 +576,6 @@ class _TodayScreenState extends State<TodayScreen> {
   }
 }
 
-// Custom painter for circular progress
 class _CircularProgressPainter extends CustomPainter {
   final double progress;
 
@@ -948,26 +584,26 @@ class _CircularProgressPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - 6;
+    final radius = size.width / 2;
 
     // Background circle
     final bgPaint = Paint()
-      ..color = Colors.white.withOpacity(0.2)
+      ..color = const Color(0xFFE5E7EB)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 6
+      ..strokeWidth = 12
       ..strokeCap = StrokeCap.round;
 
-    canvas.drawCircle(center, radius, bgPaint);
+    canvas.drawCircle(center, radius - 6, bgPaint);
 
     // Progress arc
     final progressPaint = Paint()
-      ..color = Colors.white
+      ..color = const Color(0xFF2563EB)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 6
+      ..strokeWidth = 12
       ..strokeCap = StrokeCap.round;
 
     canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
+      Rect.fromCircle(center: center, radius: radius - 6),
       -math.pi / 2,
       2 * math.pi * progress,
       false,
@@ -980,5 +616,3 @@ class _CircularProgressPainter extends CustomPainter {
     return oldDelegate.progress != progress;
   }
 }
-
-// Remove mesh gradient painter - not needed anymore

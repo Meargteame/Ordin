@@ -3,15 +3,15 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // Core Brand Colors
-  static const primaryBlue = Color(0xFF2563EB); // Professional blue
-  static const darkBlue = Color(0xFF1E40AF);
-  static const lightBlue = Color(0xFF60A5FA);
+  static const primaryBlue = Color(0xFF0EA5E9); // Sky Blue
+  static const darkBlue = Color(0xFF0284C7); // Deep Sky Blue
+  static const lightBlue = Color(0xFF38BDF8); // Light Sky Blue
   
   // Semantic Colors
   static const successGreen = Color(0xFF10B981);
   static const warningOrange = Color(0xFFF59E0B);
   static const dangerRed = Color(0xFFEF4444);
-  static const infoBlue = Color(0xFF3B82F6);
+  static const infoBlue = Color(0xFF0EA5E9); // Sky Blue
   
   // Neutral Colors
   static const backgroundColor = Color(0xFFF8FAFC);

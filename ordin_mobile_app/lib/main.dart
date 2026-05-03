@@ -5,7 +5,7 @@ import 'screens/today_screen.dart';
 import 'screens/tasks_screen.dart';
 import 'screens/habits_screen.dart';
 import 'screens/more_screen.dart';
-import 'theme/app_theme.dart';
+import 'theme/ordin_theme.dart';
 import 'data/hive_storage_service.dart';
 
 void main() async {
@@ -34,8 +34,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Ordin',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.theme,
-      themeMode: ThemeMode.light,
+      theme: OrdinTheme.lightTheme,
+      darkTheme: OrdinTheme.darkTheme,
+      themeMode: ThemeMode.light, // Start with light mode
       home: const MainScreen(),
     );
   }
@@ -67,45 +68,51 @@ class _MainScreenState extends State<MainScreen> {
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 16,
-              offset: const Offset(0, -4),
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? OrdinTheme.darkSurface 
+              : OrdinTheme.lightSurface,
+          border: Border(
+            top: BorderSide(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? OrdinTheme.darkBorder
+                  : OrdinTheme.lightBorder,
+              width: 1,
             ),
-          ],
+          ),
         ),
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: (index) => setState(() => _currentIndex = index),
           type: BottomNavigationBarType.fixed,
           elevation: 0,
-          backgroundColor: Colors.white,
-          selectedItemColor: AppTheme.primaryBlue,
-          unselectedItemColor: AppTheme.textTertiary,
+          backgroundColor: Colors.transparent,
+          selectedItemColor: OrdinTheme.primary,
+          unselectedItemColor: Theme.of(context).brightness == Brightness.dark
+              ? OrdinTheme.darkTextTertiary
+              : OrdinTheme.lightTextTertiary,
           selectedFontSize: 12,
           unselectedFontSize: 11,
           selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
           items: const [
             BottomNavigationBarItem(
-              icon: Icon(Icons.home_rounded),
-              activeIcon: Icon(Icons.home_rounded, size: 28),
-              label: 'Today',
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home),
+              label: 'TODAY',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.check_circle_outline_rounded),
-              activeIcon: Icon(Icons.check_circle_rounded, size: 28),
-              label: 'Tasks',
+              icon: Icon(Icons.check_circle_outline),
+              activeIcon: Icon(Icons.check_circle),
+              label: 'TASKS',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.auto_awesome_outlined),
-              activeIcon: Icon(Icons.auto_awesome_rounded, size: 28),
-              label: 'Habits',
+              icon: Icon(Icons.bolt_outlined),
+              activeIcon: Icon(Icons.bolt),
+              label: 'HABITS',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.apps_outlined),
-              activeIcon: Icon(Icons.apps_rounded, size: 28),
-              label: 'More',
+              activeIcon: Icon(Icons.apps),
+              label: 'MORE',
             ),
           ],
         ),
