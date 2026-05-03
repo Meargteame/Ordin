@@ -3,6 +3,8 @@ import '../models/task.dart';
 import '../data/task_repository.dart';
 import '../data/hive_storage_service.dart';
 import '../widgets/task_form_screen.dart';
+import '../theme/theme_helper.dart';
+import '../theme/ordin_theme.dart';
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
@@ -109,7 +111,7 @@ class _TasksScreenState extends State<TasksScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: ThemeHelper.backgroundColor(context),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : CustomScrollView(
@@ -130,7 +132,7 @@ class _TasksScreenState extends State<TasksScreen> {
                           _buildPrioritySection(
                             'High Priority',
                             _highPriorityTasks,
-                            const Color(0xFFEF4444),
+                            OrdinTheme.error,
                           ),
                           const SizedBox(height: 24),
                         ],
@@ -138,7 +140,7 @@ class _TasksScreenState extends State<TasksScreen> {
                           _buildPrioritySection(
                             'Medium Priority',
                             _mediumPriorityTasks,
-                            const Color(0xFFF59E0B),
+                            OrdinTheme.warning,
                           ),
                           const SizedBox(height: 24),
                         ],
@@ -146,7 +148,7 @@ class _TasksScreenState extends State<TasksScreen> {
                           _buildPrioritySection(
                             'Low Priority',
                             _lowPriorityTasks,
-                            const Color(0xFF10B981),
+                            OrdinTheme.success,
                           ),
                           const SizedBox(height: 24),
                         ],
@@ -160,7 +162,7 @@ class _TasksScreenState extends State<TasksScreen> {
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openTaskForm(),
-        backgroundColor: const Color(0xFF2563EB),
+        backgroundColor: OrdinTheme.primary,
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
@@ -169,30 +171,30 @@ class _TasksScreenState extends State<TasksScreen> {
   Widget _buildAppBar() {
     return SliverAppBar(
       floating: true,
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: ThemeHelper.backgroundColor(context),
       elevation: 0,
       toolbarHeight: 70,
       title: Row(
         children: [
           CircleAvatar(
             radius: 20,
-            backgroundColor: const Color(0xFF2563EB).withOpacity(0.1),
-            child: const Icon(Icons.person, color: Color(0xFF2563EB), size: 20),
+            backgroundColor: OrdinTheme.primary.withOpacity(0.1),
+            child: const Icon(Icons.person, color: OrdinTheme.primary, size: 20),
           ),
           const SizedBox(width: 12),
-          const Text(
+          Text(
             'Good morning, Alex',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1F2937),
+              color: ThemeHelper.textPrimary(context),
             ),
           ),
         ],
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.calendar_today_outlined, color: Color(0xFF6B7280)),
+          icon: Icon(Icons.calendar_today_outlined, color: ThemeHelper.textSecondary(context)),
           onPressed: () {},
         ),
       ],
@@ -202,25 +204,15 @@ class _TasksScreenState extends State<TasksScreen> {
   Widget _buildSearchBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: ThemeHelper.cardDecoration(context),
       child: TextField(
         decoration: InputDecoration(
           hintText: 'Search tasks, projects, or tags...',
-          hintStyle: const TextStyle(
+          hintStyle: TextStyle(
             fontSize: 14,
-            color: Color(0xFF9CA3AF),
+            color: ThemeHelper.textTertiary(context),
           ),
-          prefixIcon: const Icon(Icons.search, color: Color(0xFF9CA3AF)),
+          prefixIcon: Icon(Icons.search, color: ThemeHelper.textTertiary(context)),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(vertical: 16),
         ),
@@ -244,18 +236,18 @@ class _TasksScreenState extends State<TasksScreen> {
               onSelected: (selected) {
                 setState(() => _selectedFilter = filter);
               },
-              backgroundColor: Colors.white,
-              selectedColor: const Color(0xFF2563EB),
+              backgroundColor: ThemeHelper.cardColor(context),
+              selectedColor: OrdinTheme.primary,
               labelStyle: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : const Color(0xFF6B7280),
+                color: isSelected ? Colors.white : ThemeHelper.textSecondary(context),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
                 side: BorderSide(
-                  color: isSelected ? const Color(0xFF2563EB) : const Color(0xFFE5E7EB),
+                  color: isSelected ? OrdinTheme.primary : ThemeHelper.borderColor(context),
                 ),
               ),
             ),
@@ -282,10 +274,10 @@ class _TasksScreenState extends State<TasksScreen> {
             const SizedBox(width: 8),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF1F2937),
+                color: ThemeHelper.textPrimary(context),
               ),
             ),
             const SizedBox(width: 8),
@@ -319,19 +311,13 @@ class _TasksScreenState extends State<TasksScreen> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: ThemeHelper.cardColor(context),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: task.isDone ? const Color(0xFF10B981) : const Color(0xFFE5E7EB),
+            color: task.isDone ? OrdinTheme.success : ThemeHelper.borderColor(context),
             width: 1,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          boxShadow: [ThemeHelper.cardShadow(context)],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -345,9 +331,9 @@ class _TasksScreenState extends State<TasksScreen> {
                     height: 24,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: task.isDone ? const Color(0xFF2563EB) : Colors.transparent,
+                      color: task.isDone ? OrdinTheme.primary : Colors.transparent,
                       border: Border.all(
-                        color: task.isDone ? const Color(0xFF2563EB) : const Color(0xFFD1D5DB),
+                        color: task.isDone ? OrdinTheme.primary : ThemeHelper.borderColor(context),
                         width: 2,
                       ),
                     ),
@@ -363,7 +349,7 @@ class _TasksScreenState extends State<TasksScreen> {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: task.isDone ? const Color(0xFF9CA3AF) : const Color(0xFF1F2937),
+                      color: task.isDone ? ThemeHelper.textTertiary(context) : ThemeHelper.textPrimary(context),
                       decoration: task.isDone ? TextDecoration.lineThrough : null,
                     ),
                   ),
@@ -373,20 +359,20 @@ class _TasksScreenState extends State<TasksScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFEF3C7),
+                      color: OrdinTheme.warning.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.calendar_today, size: 12, color: Color(0xFFF59E0B)),
+                        const Icon(Icons.calendar_today, size: 12, color: OrdinTheme.warning),
                         const SizedBox(width: 4),
                         Text(
                           _formatDueDate(task.dueDate!),
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFFF59E0B),
+                            color: OrdinTheme.warning,
                           ),
                         ),
                       ],
@@ -401,9 +387,9 @@ class _TasksScreenState extends State<TasksScreen> {
                 padding: const EdgeInsets.only(left: 36),
                 child: Text(
                   task.description!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF6B7280),
+                    color: ThemeHelper.textSecondary(context),
                     height: 1.4,
                   ),
                   maxLines: 2,
@@ -422,15 +408,17 @@ class _TasksScreenState extends State<TasksScreen> {
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF3F4F6),
+                        color: ThemeHelper.isDark(context) 
+                            ? ThemeHelper.borderColor(context)
+                            : const Color(0xFFF3F4F6),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         tag,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF6B7280),
+                          color: ThemeHelper.textSecondary(context),
                         ),
                       ),
                     );
@@ -464,40 +452,30 @@ class _TasksScreenState extends State<TasksScreen> {
   Widget _buildEmptyState() {
     return Container(
       padding: const EdgeInsets.all(48),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: ThemeHelper.cardDecoration(context),
       child: Center(
         child: Column(
           children: [
             Icon(
               Icons.task_alt,
               size: 64,
-              color: Colors.grey[300],
+              color: ThemeHelper.textTertiary(context).withOpacity(0.5),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'No tasks found',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF6B7280),
+                color: ThemeHelper.textSecondary(context),
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Create your first task to get started',
               style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF9CA3AF),
+                color: ThemeHelper.textTertiary(context),
               ),
             ),
           ],

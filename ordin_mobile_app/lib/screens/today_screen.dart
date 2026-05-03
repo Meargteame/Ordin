@@ -11,6 +11,8 @@ import '../data/goal_repository.dart';
 import '../data/project_repository.dart';
 import '../data/time_tracking_repository.dart';
 import '../data/hive_storage_service.dart';
+import '../theme/theme_helper.dart';
+import '../theme/ordin_theme.dart';
 
 class TodayScreen extends StatefulWidget {
   const TodayScreen({super.key});
@@ -94,12 +96,12 @@ class _TodayScreenState extends State<TodayScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: ThemeHelper.backgroundColor(context),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _loadData,
-              color: const Color(0xFF2563EB),
+              color: OrdinTheme.primary,
               child: CustomScrollView(
                 physics: const BouncingScrollPhysics(),
                 slivers: [
@@ -133,34 +135,34 @@ class _TodayScreenState extends State<TodayScreen> {
   Widget _buildAppBar() {
     return SliverAppBar(
       floating: true,
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: ThemeHelper.backgroundColor(context),
       elevation: 0,
       toolbarHeight: 70,
       title: Row(
         children: [
           CircleAvatar(
             radius: 20,
-            backgroundColor: const Color(0xFF2563EB).withOpacity(0.1),
-            child: const Icon(Icons.person, color: Color(0xFF2563EB), size: 20),
+            backgroundColor: OrdinTheme.primary.withOpacity(0.1),
+            child: const Icon(Icons.person, color: OrdinTheme.primary, size: 20),
           ),
           const SizedBox(width: 12),
-          const Text(
+          Text(
             'Good morning, Alex',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1F2937),
+              color: ThemeHelper.textPrimary(context),
             ),
           ),
         ],
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.calendar_today_outlined, color: Color(0xFF6B7280)),
+          icon: Icon(Icons.calendar_today_outlined, color: ThemeHelper.textSecondary(context)),
           onPressed: () {},
         ),
         IconButton(
-          icon: const Icon(Icons.notifications_outlined, color: Color(0xFF6B7280)),
+          icon: Icon(Icons.notifications_outlined, color: ThemeHelper.textSecondary(context)),
           onPressed: () {},
         ),
       ],
@@ -173,19 +175,19 @@ class _TodayScreenState extends State<TodayScreen> {
       children: [
         Text(
           DateFormat('EEEE, MMMM d').format(DateTime.now()).toUpperCase(),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF6B7280),
+            color: ThemeHelper.textSecondary(context),
             letterSpacing: 0.5,
           ),
         ),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           'Your daily summary',
           style: TextStyle(
             fontSize: 14,
-            color: Color(0xFF9CA3AF),
+            color: ThemeHelper.textTertiary(context),
           ),
         ),
       ],
@@ -200,7 +202,7 @@ class _TodayScreenState extends State<TodayScreen> {
             'TASKS',
             '$_completedTasks / ${_todayTasks.length}',
             Icons.check_circle_outline,
-            const Color(0xFF2563EB),
+            OrdinTheme.primary,
           ),
         ),
         const SizedBox(width: 12),
@@ -209,7 +211,7 @@ class _TodayScreenState extends State<TodayScreen> {
             'HABITS',
             '$_completedHabits / ${_habits.length}',
             Icons.refresh,
-            const Color(0xFF2563EB),
+            OrdinTheme.primary,
           ),
         ),
         const SizedBox(width: 12),
@@ -218,7 +220,7 @@ class _TodayScreenState extends State<TodayScreen> {
             'STREAK',
             '$_longestStreak Days',
             Icons.local_fire_department_outlined,
-            const Color(0xFFEF4444),
+            OrdinTheme.error,
           ),
         ),
       ],
@@ -228,17 +230,7 @@ class _TodayScreenState extends State<TodayScreen> {
   Widget _buildStatCard(String label, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: ThemeHelper.cardDecoration(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -246,19 +238,19 @@ class _TodayScreenState extends State<TodayScreen> {
           const SizedBox(height: 12),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF1F2937),
+              color: ThemeHelper.textPrimary(context),
             ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF9CA3AF),
+              color: ThemeHelper.textTertiary(context),
               letterSpacing: 0.5,
             ),
           ),
@@ -276,7 +268,7 @@ class _TodayScreenState extends State<TodayScreen> {
           children: [
             CustomPaint(
               size: const Size(160, 160),
-              painter: _CircularProgressPainter(_completionRate),
+              painter: _CircularProgressPainter(_completionRate, context),
             ),
             Center(
               child: Column(
@@ -287,15 +279,15 @@ class _TodayScreenState extends State<TodayScreen> {
                     style: const TextStyle(
                       fontSize: 36,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF2563EB),
+                      color: OrdinTheme.primary,
                     ),
                   ),
-                  const Text(
+                  Text(
                     'COMPLETED',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF9CA3AF),
+                      color: ThemeHelper.textTertiary(context),
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -312,12 +304,12 @@ class _TodayScreenState extends State<TodayScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Life Areas',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1F2937),
+            color: ThemeHelper.textPrimary(context),
           ),
         ),
         const SizedBox(height: 16),
@@ -346,17 +338,7 @@ class _TodayScreenState extends State<TodayScreen> {
   Widget _buildLifeAreaItem(String label, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: ThemeHelper.cardDecoration(context),
       child: Row(
         children: [
           Container(
@@ -371,10 +353,10 @@ class _TodayScreenState extends State<TodayScreen> {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1F2937),
+                color: ThemeHelper.textPrimary(context),
               ),
             ),
           ),
@@ -390,12 +372,12 @@ class _TodayScreenState extends State<TodayScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Today\'s Focus',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF1F2937),
+                color: ThemeHelper.textPrimary(context),
               ),
             ),
             Text(
@@ -403,7 +385,7 @@ class _TodayScreenState extends State<TodayScreen> {
               style: const TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF2563EB),
+                color: OrdinTheme.primary,
                 letterSpacing: 0.5,
               ),
             ),
@@ -423,19 +405,13 @@ class _TodayScreenState extends State<TodayScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.cardColor(context),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: task.isDone ? const Color(0xFF10B981) : const Color(0xFFE5E7EB),
+          color: task.isDone ? OrdinTheme.success : ThemeHelper.borderColor(context),
           width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: [ThemeHelper.cardShadow(context)],
       ),
       child: Row(
         children: [
@@ -446,9 +422,9 @@ class _TodayScreenState extends State<TodayScreen> {
               height: 24,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: task.isDone ? const Color(0xFF2563EB) : Colors.transparent,
+                color: task.isDone ? OrdinTheme.primary : Colors.transparent,
                 border: Border.all(
-                  color: task.isDone ? const Color(0xFF2563EB) : const Color(0xFFD1D5DB),
+                  color: task.isDone ? OrdinTheme.primary : ThemeHelper.borderColor(context),
                   width: 2,
                 ),
               ),
@@ -467,7 +443,7 @@ class _TodayScreenState extends State<TodayScreen> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: task.isDone ? const Color(0xFF9CA3AF) : const Color(0xFF1F2937),
+                    color: task.isDone ? ThemeHelper.textTertiary(context) : ThemeHelper.textPrimary(context),
                     decoration: task.isDone ? TextDecoration.lineThrough : null,
                   ),
                 ),
@@ -475,9 +451,9 @@ class _TodayScreenState extends State<TodayScreen> {
                   const SizedBox(height: 4),
                   Text(
                     task.description!,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF9CA3AF),
+                      color: ThemeHelper.textTertiary(context),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -491,15 +467,17 @@ class _TodayScreenState extends State<TodayScreen> {
                       return Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF3F4F6),
+                          color: ThemeHelper.isDark(context) 
+                              ? ThemeHelper.borderColor(context)
+                              : const Color(0xFFF3F4F6),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           tag,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF6B7280),
+                            color: ThemeHelper.textSecondary(context),
                           ),
                         ),
                       );
@@ -513,13 +491,13 @@ class _TodayScreenState extends State<TodayScreen> {
             const SizedBox(width: 8),
             Row(
               children: [
-                const Icon(Icons.schedule, size: 14, color: Color(0xFF9CA3AF)),
+                Icon(Icons.schedule, size: 14, color: ThemeHelper.textTertiary(context)),
                 const SizedBox(width: 4),
                 Text(
                   '${task.estimatedMinutes}m',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF6B7280),
+                    color: ThemeHelper.textSecondary(context),
                   ),
                 ),
               ],
@@ -533,40 +511,30 @@ class _TodayScreenState extends State<TodayScreen> {
   Widget _buildEmptyState() {
     return Container(
       padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: ThemeHelper.cardDecoration(context),
       child: Center(
         child: Column(
           children: [
             Icon(
               Icons.check_circle_outline,
               size: 48,
-              color: Colors.grey[300],
+              color: ThemeHelper.textTertiary(context).withOpacity(0.5),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'All tasks completed!',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF6B7280),
+                color: ThemeHelper.textSecondary(context),
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Great job! You\'re all caught up.',
               style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF9CA3AF),
+                color: ThemeHelper.textTertiary(context),
               ),
             ),
           ],
@@ -578,8 +546,9 @@ class _TodayScreenState extends State<TodayScreen> {
 
 class _CircularProgressPainter extends CustomPainter {
   final double progress;
+  final BuildContext context;
 
-  _CircularProgressPainter(this.progress);
+  _CircularProgressPainter(this.progress, this.context);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -588,7 +557,7 @@ class _CircularProgressPainter extends CustomPainter {
 
     // Background circle
     final bgPaint = Paint()
-      ..color = const Color(0xFFE5E7EB)
+      ..color = ThemeHelper.borderColor(context)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 12
       ..strokeCap = StrokeCap.round;
@@ -597,7 +566,7 @@ class _CircularProgressPainter extends CustomPainter {
 
     // Progress arc
     final progressPaint = Paint()
-      ..color = const Color(0xFF2563EB)
+      ..color = OrdinTheme.primary
       ..style = PaintingStyle.stroke
       ..strokeWidth = 12
       ..strokeCap = StrokeCap.round;

@@ -4,6 +4,8 @@ import '../models/habit.dart';
 import '../data/habit_repository.dart';
 import '../data/hive_storage_service.dart';
 import '../widgets/habit_form_screen.dart';
+import '../theme/theme_helper.dart';
+import '../theme/ordin_theme.dart';
 
 class HabitsScreen extends StatefulWidget {
   const HabitsScreen({super.key});
@@ -81,7 +83,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: ThemeHelper.backgroundColor(context),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : CustomScrollView(
@@ -110,7 +112,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openHabitForm(),
-        backgroundColor: const Color(0xFF2563EB),
+        backgroundColor: OrdinTheme.primary,
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
@@ -119,34 +121,34 @@ class _HabitsScreenState extends State<HabitsScreen> {
   Widget _buildAppBar() {
     return SliverAppBar(
       floating: true,
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: ThemeHelper.backgroundColor(context),
       elevation: 0,
       toolbarHeight: 70,
       title: Row(
         children: [
           CircleAvatar(
             radius: 20,
-            backgroundColor: const Color(0xFF2563EB).withOpacity(0.1),
-            child: const Icon(Icons.person, color: Color(0xFF2563EB), size: 20),
+            backgroundColor: OrdinTheme.primary.withOpacity(0.1),
+            child: const Icon(Icons.person, color: OrdinTheme.primary, size: 20),
           ),
           const SizedBox(width: 12),
-          const Text(
+          Text(
             'Good morning, Alex',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1F2937),
+              color: ThemeHelper.textPrimary(context),
             ),
           ),
         ],
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.calendar_today_outlined, color: Color(0xFF6B7280)),
+          icon: Icon(Icons.calendar_today_outlined, color: ThemeHelper.textSecondary(context)),
           onPressed: () {},
         ),
         IconButton(
-          icon: const Icon(Icons.notifications_outlined, color: Color(0xFF6B7280)),
+          icon: Icon(Icons.notifications_outlined, color: ThemeHelper.textSecondary(context)),
           onPressed: () {},
         ),
       ],
@@ -159,38 +161,28 @@ class _HabitsScreenState extends State<HabitsScreen> {
     
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: ThemeHelper.cardDecoration(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Weekly Consistency',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF6B7280),
+                  color: ThemeHelper.textSecondary(context),
                 ),
               ),
               Row(
                 children: [
-                  const Text(
+                  Text(
                     'Current Streak: ',
                     style: TextStyle(
                       fontSize: 13,
-                      color: Color(0xFF6B7280),
+                      color: ThemeHelper.textSecondary(context),
                     ),
                   ),
                   Text(
@@ -198,15 +190,15 @@ class _HabitsScreenState extends State<HabitsScreen> {
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF2563EB),
+                      color: OrdinTheme.primary,
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Text(
+                  Text(
                     'Days',
                     style: TextStyle(
                       fontSize: 13,
-                      color: Color(0xFF6B7280),
+                      color: ThemeHelper.textSecondary(context),
                     ),
                   ),
                 ],
@@ -227,10 +219,10 @@ class _HabitsScreenState extends State<HabitsScreen> {
                 children: [
                   Text(
                     ['M', 'T', 'W', 'T', 'F', 'S', 'S'][date.weekday - 1],
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF9CA3AF),
+                      color: ThemeHelper.textTertiary(context),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -240,12 +232,12 @@ class _HabitsScreenState extends State<HabitsScreen> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: hasCompletions
-                          ? const Color(0xFF2563EB)
+                          ? OrdinTheme.primary
                           : Colors.transparent,
                       border: Border.all(
                         color: isToday
-                            ? const Color(0xFF2563EB)
-                            : (hasCompletions ? const Color(0xFF2563EB) : const Color(0xFFE5E7EB)),
+                            ? OrdinTheme.primary
+                            : (hasCompletions ? OrdinTheme.primary : ThemeHelper.borderColor(context)),
                         width: isToday ? 2 : 1,
                       ),
                     ),
@@ -267,38 +259,28 @@ class _HabitsScreenState extends State<HabitsScreen> {
     
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: ThemeHelper.cardDecoration(context),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF2563EB).withOpacity(0.1),
+              color: OrdinTheme.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.bar_chart, color: Color(0xFF2563EB), size: 24),
+            child: const Icon(Icons.bar_chart, color: OrdinTheme.primary, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'TOTAL COMPLETED',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF9CA3AF),
+                    color: ThemeHelper.textTertiary(context),
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -310,15 +292,15 @@ class _HabitsScreenState extends State<HabitsScreen> {
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF2563EB),
+                        color: OrdinTheme.primary,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Text(
+                    Text(
                       'this month',
                       style: TextStyle(
                         fontSize: 13,
-                        color: Color(0xFF6B7280),
+                        color: ThemeHelper.textSecondary(context),
                       ),
                     ),
                   ],
@@ -338,12 +320,12 @@ class _HabitsScreenState extends State<HabitsScreen> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF2563EB), Color(0xFF1E40AF)],
+          colors: [OrdinTheme.primary, OrdinTheme.primaryDark],
         ),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF2563EB).withOpacity(0.3),
+            color: OrdinTheme.primary.withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -435,12 +417,12 @@ class _HabitsScreenState extends State<HabitsScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Daily Habits',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF1F2937),
+                color: ThemeHelper.textPrimary(context),
               ),
             ),
             TextButton(
@@ -450,7 +432,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF2563EB),
+                  color: OrdinTheme.primary,
                 ),
               ),
             ),
@@ -474,17 +456,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
+        decoration: ThemeHelper.cardDecoration(context),
         child: Row(
           children: [
             GestureDetector(
@@ -496,7 +468,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                   children: [
                     CustomPaint(
                       size: const Size(50, 50),
-                      painter: _HabitProgressPainter(progress, categoryColor),
+                      painter: _HabitProgressPainter(progress, categoryColor, context),
                     ),
                     Center(
                       child: Text(
@@ -540,20 +512,20 @@ class _HabitsScreenState extends State<HabitsScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFEF3C7),
+                            color: OrdinTheme.warning.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.local_fire_department, size: 12, color: Color(0xFFF59E0B)),
+                              const Icon(Icons.local_fire_department, size: 12, color: OrdinTheme.warning),
                               const SizedBox(width: 2),
                               Text(
                                 '${habit.streak}',
                                 style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
-                                  color: Color(0xFFF59E0B),
+                                  color: OrdinTheme.warning,
                                 ),
                               ),
                               const SizedBox(width: 2),
@@ -562,7 +534,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFFF59E0B),
+                                  color: OrdinTheme.warning,
                                 ),
                               ),
                             ],
@@ -574,19 +546,19 @@ class _HabitsScreenState extends State<HabitsScreen> {
                   const SizedBox(height: 8),
                   Text(
                     habit.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1F2937),
+                      color: ThemeHelper.textPrimary(context),
                     ),
                   ),
                   if (habit.description != null && habit.description!.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(
                       habit.description!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF9CA3AF),
+                        color: ThemeHelper.textTertiary(context),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -596,7 +568,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.add, color: Color(0xFF2563EB)),
+              icon: const Icon(Icons.add, color: OrdinTheme.primary),
               onPressed: () => _toggleHabit(habit),
             ),
           ],
@@ -646,40 +618,30 @@ class _HabitsScreenState extends State<HabitsScreen> {
   Widget _buildEmptyState() {
     return Container(
       padding: const EdgeInsets.all(48),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: ThemeHelper.cardDecoration(context),
       child: Center(
         child: Column(
           children: [
             Icon(
               Icons.auto_awesome,
               size: 64,
-              color: Colors.grey[300],
+              color: ThemeHelper.textTertiary(context).withOpacity(0.5),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'No habits yet',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF6B7280),
+                color: ThemeHelper.textSecondary(context),
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Create your first habit to start building consistency',
               style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF9CA3AF),
+                color: ThemeHelper.textTertiary(context),
               ),
               textAlign: TextAlign.center,
             ),
@@ -693,8 +655,9 @@ class _HabitsScreenState extends State<HabitsScreen> {
 class _HabitProgressPainter extends CustomPainter {
   final double progress;
   final Color color;
+  final BuildContext context;
 
-  _HabitProgressPainter(this.progress, this.color);
+  _HabitProgressPainter(this.progress, this.color, this.context);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -703,7 +666,7 @@ class _HabitProgressPainter extends CustomPainter {
 
     // Background circle
     final bgPaint = Paint()
-      ..color = const Color(0xFFE5E7EB)
+      ..color = ThemeHelper.borderColor(context)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4;
 

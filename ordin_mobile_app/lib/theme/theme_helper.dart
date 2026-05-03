@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'ordin_theme.dart';
 
 class ThemeHelper {
   static bool isDark(BuildContext context) {
@@ -6,19 +7,19 @@ class ThemeHelper {
   }
   
   static Color backgroundColor(BuildContext context) {
-    return isDark(context) ? const Color(0xFF0A0A0A) : const Color(0xFFF8F9FA);
+    return isDark(context) ? OrdinTheme.darkBackground : const Color(0xFFF8F9FA);
   }
   
   static Color cardColor(BuildContext context) {
-    return isDark(context) ? const Color(0xFF1F1F1F) : Colors.white;
+    return isDark(context) ? OrdinTheme.darkCard : Colors.white;
   }
   
   static Color surfaceColor(BuildContext context) {
-    return isDark(context) ? const Color(0xFF1A1A1A) : Colors.white;
+    return isDark(context) ? OrdinTheme.darkSurface : Colors.white;
   }
   
   static Color borderColor(BuildContext context) {
-    return isDark(context) ? const Color(0xFF2A2A2A) : const Color(0xFFE5E7EB);
+    return isDark(context) ? OrdinTheme.darkBorder : const Color(0xFFE5E7EB);
   }
   
   static Color textPrimary(BuildContext context) {

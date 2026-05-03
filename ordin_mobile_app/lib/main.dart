@@ -26,8 +26,21 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  ThemeMode _themeMode = ThemeMode.system;
+
+  void _changeTheme(ThemeMode mode) {
+    setState(() {
+      _themeMode = mode;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,14 +49,24 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: OrdinTheme.lightTheme,
       darkTheme: OrdinTheme.darkTheme,
-      themeMode: ThemeMode.light, // Start with light mode
-      home: const MainScreen(),
+      themeMode: _themeMode,
+      home: MainScreen(
+        onThemeChanged: _changeTheme,
+        currentThemeMode: _themeMode,
+      ),
     );
   }
 }
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  final Function(ThemeMode) onThemeChanged;
+  final ThemeMode currentThemeMode;
+  
+  const MainScreen({
+    super.key,
+    required this.onThemeChanged,
+    required this.currentThemeMode,
+  });
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -52,11 +75,14 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
+  List<Widget> get _screens => [
     const TodayScreen(),
     const TasksScreen(),
     const HabitsScreen(),
-    const MoreScreen(),
+    MoreScreen(
+      onThemeChanged: widget.onThemeChanged,
+      currentThemeMode: widget.currentThemeMode,
+    ),
   ];
 
   @override

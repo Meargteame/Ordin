@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/goal.dart';
 import '../data/goal_repository.dart';
 import '../data/hive_storage_service.dart';
+import '../theme/theme_helper.dart';
+import '../theme/ordin_theme.dart';
 
 class GoalsScreen extends StatefulWidget {
   const GoalsScreen({super.key});
@@ -40,20 +42,20 @@ class _GoalsScreenState extends State<GoalsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: ThemeHelper.backgroundColor(context),
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF8F9FA),
+        backgroundColor: ThemeHelper.backgroundColor(context),
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Goals',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1F2937),
+            color: ThemeHelper.textPrimary(context),
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1F2937)),
+          icon: Icon(Icons.arrow_back, color: ThemeHelper.textPrimary(context)),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -68,7 +70,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                 ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
-        backgroundColor: const Color(0xFF2563EB),
+        backgroundColor: OrdinTheme.primary,
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );

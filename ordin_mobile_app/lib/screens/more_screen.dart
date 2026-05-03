@@ -11,14 +11,23 @@ import 'relationships_screen.dart';
 import 'learning_screen.dart';
 import 'analytics_screen.dart';
 import 'settings_screen.dart';
+import '../theme/theme_helper.dart';
+import '../theme/ordin_theme.dart';
 
 class MoreScreen extends StatelessWidget {
-  const MoreScreen({super.key});
+  final Function(ThemeMode)? onThemeChanged;
+  final ThemeMode? currentThemeMode;
+  
+  const MoreScreen({
+    super.key,
+    this.onThemeChanged,
+    this.currentThemeMode,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: ThemeHelper.backgroundColor(context),
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
@@ -130,7 +139,7 @@ class MoreScreen extends StatelessWidget {
                         icon: Icons.insights_outlined,
                         title: 'Analytics',
                         subtitle: 'Visualize and analyze performance',
-                        color: const Color(0xFF2563EB),
+                        color: OrdinTheme.primary,
                         screen: const AnalyticsScreen(),
                       ),
                       _AppItem(
@@ -143,6 +152,23 @@ class MoreScreen extends StatelessWidget {
                             const SnackBar(content: Text('Export feature coming soon')),
                           );
                         },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  _buildSection(
+                    'Settings',
+                    null,
+                    [
+                      _AppItem(
+                        icon: Icons.settings_outlined,
+                        title: 'Settings',
+                        subtitle: 'App preferences and configuration',
+                        color: const Color(0xFF6B7280),
+                        screen: SettingsScreen(
+                          onThemeChanged: onThemeChanged,
+                          currentThemeMode: currentThemeMode,
+                        ),
                       ),
                     ],
                   ),
@@ -161,137 +187,118 @@ class MoreScreen extends StatelessWidget {
   }
 
   Widget _buildAppBar() {
-    return SliverAppBar(
-      floating: true,
-      backgroundColor: const Color(0xFFF8F9FA),
-      elevation: 0,
-      toolbarHeight: 70,
-      title: const Row(
-        children: [
-          Text(
-            'Explore Apps',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1F2937),
-            ),
+    return Builder(
+      builder: (context) => SliverAppBar(
+        floating: true,
+        backgroundColor: ThemeHelper.backgroundColor(context),
+        elevation: 0,
+        toolbarHeight: 70,
+        title: Text(
+          'Explore Apps',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            color: ThemeHelper.textPrimary(context),
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.search, color: ThemeHelper.textSecondary(context)),
+            onPressed: () {},
           ),
         ],
       ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.search, color: Color(0xFF6B7280)),
-          onPressed: () {},
-        ),
-      ],
     );
   }
 
   Widget _buildExploreAppsCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Manage your ecosystem',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1F2937),
+    return Builder(
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: ThemeHelper.cardDecoration(context),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Manage your ecosystem',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: ThemeHelper.textPrimary(context),
+              ),
             ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Connect specialized mini-apps to your workspace to build your ideal life management system.',
-            style: TextStyle(
-              fontSize: 13,
-              color: Color(0xFF6B7280),
-              height: 1.5,
+            const SizedBox(height: 8),
+            Text(
+              'Connect specialized mini-apps to your workspace to build your ideal life management system.',
+              style: TextStyle(
+                fontSize: 13,
+                color: ThemeHelper.textSecondary(context),
+                height: 1.5,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildSection(String title, String? badge, List<_AppItem> items) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF1F2937),
-              ),
-            ),
-            if (badge != null) ...[
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2563EB),
-                  borderRadius: BorderRadius.circular(6),
+    return Builder(
+      builder: (context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: ThemeHelper.textPrimary(context),
                 ),
-                child: Text(
-                  badge,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: 0.5,
+              ),
+              if (badge != null) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: OrdinTheme.primary,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    badge,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
+              ],
             ],
           ),
-          child: Column(
-            children: items.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
-              final isLast = index == items.length - 1;
-              
-              return Column(
-                children: [
-                  _buildAppListItem(item),
-                  if (!isLast)
-                    const Divider(height: 1, indent: 68, color: Color(0xFFF3F4F6)),
-                ],
-              );
-            }).toList(),
+          const SizedBox(height: 12),
+          Container(
+            decoration: ThemeHelper.cardDecoration(context),
+            child: Column(
+              children: items.asMap().entries.map((entry) {
+                final index = entry.key;
+                final item = entry.value;
+                final isLast = index == items.length - 1;
+                
+                return Column(
+                  children: [
+                    _buildAppListItem(item),
+                    if (!isLast)
+                      Divider(height: 1, indent: 68, color: ThemeHelper.borderColor(context)),
+                  ],
+                );
+              }).toList(),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -331,25 +338,25 @@ class MoreScreen extends StatelessWidget {
                     children: [
                       Text(
                         item.title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF1F2937),
+                          color: ThemeHelper.textPrimary(context),
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         item.subtitle,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF9CA3AF),
+                          color: ThemeHelper.textTertiary(context),
                           height: 1.4,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right, color: Color(0xFFD1D5DB), size: 20),
+                Icon(Icons.chevron_right, color: ThemeHelper.borderColor(context), size: 20),
               ],
             ),
           ),
@@ -365,12 +372,12 @@ class MoreScreen extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF2563EB), Color(0xFF1E40AF)],
+          colors: [OrdinTheme.primary, OrdinTheme.primaryDark],
         ),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF2563EB).withOpacity(0.3),
+            color: OrdinTheme.primary.withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -401,7 +408,7 @@ class MoreScreen extends StatelessWidget {
             onPressed: () {},
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF2563EB),
+              foregroundColor: OrdinTheme.primary,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -422,61 +429,52 @@ class MoreScreen extends StatelessWidget {
   }
 
   Widget _buildFeedbackCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(
-            Icons.favorite_border,
-            size: 48,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Report an Issue or App',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1F2937),
+    return Builder(
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: ThemeHelper.cardDecoration(context),
+        child: Column(
+          children: [
+            Icon(
+              Icons.favorite_border,
+              size: 48,
+              color: ThemeHelper.textTertiary(context).withOpacity(0.5),
             ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Can\'t find any app you might use or have a suggestion?',
-            style: TextStyle(
-              fontSize: 13,
-              color: Color(0xFF6B7280),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          TextButton(
-            onPressed: () {},
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF2563EB),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            ),
-            child: const Text(
-              'Submit Idea',
+            const SizedBox(height: 16),
+            Text(
+              'Report an Issue or App',
               style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: ThemeHelper.textPrimary(context),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              'Can\'t find any app you might use or have a suggestion?',
+              style: TextStyle(
+                fontSize: 13,
+                color: ThemeHelper.textSecondary(context),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () {},
+              style: TextButton.styleFrom(
+                foregroundColor: OrdinTheme.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              ),
+              child: const Text(
+                'Submit Idea',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

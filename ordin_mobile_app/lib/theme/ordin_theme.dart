@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class OrdinTheme {
-  // Dark Mode Colors
-  static const darkBackground = Color(0xFF0A0A0A);
-  static const darkSurface = Color(0xFF1A1A1A);
-  static const darkCard = Color(0xFF1F1F1F);
-  static const darkBorder = Color(0xFF2A2A2A);
-  static const darkCardElevated = Color(0xFF252525);
+  // Dark Mode Colors - Dim Dark Blue
+  static const darkBackground = Color(0xFF0F1419); // Dark blue-gray
+  static const darkSurface = Color(0xFF1A1F29); // Slightly lighter blue-gray
+  static const darkCard = Color(0xFF1E2430); // Card blue-gray
+  static const darkBorder = Color(0xFF2A3441); // Border blue-gray
+  static const darkCardElevated = Color(0xFF252D3A);
   
   // Light Mode Colors
   static const lightBackground = Color(0xFFF5F5F4); // Warm gray
