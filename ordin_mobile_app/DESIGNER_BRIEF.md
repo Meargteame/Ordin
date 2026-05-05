@@ -9,7 +9,7 @@
 ## What is Ordin?
 Ordin is a **personal life management super-app** - think of it as "16 mini-apps in one" for managing your entire life. It's for people who want ONE app to control everything instead of juggling 10+ different apps.
 
-## The Problem
+## The Problemf
 The current UI looks generic, AI-generated, and cheap. It doesn't inspire confidence or justify a premium subscription price. Users need to feel like they're using a $30/month product, not a free app.
 
 ---
@@ -20,16 +20,7 @@ The current UI looks generic, AI-generated, and cheap. It doesn't inspire confid
 1. **Today** - Dashboard/home screen (most important)
 2. **Tasks** - Task management
 3. **Habits** - Daily habit tracking
-4. **More** - Access to other 12 mini-apps
-
-### The 16 Mini-Apps Inside Ordin
-
-#### Core Productivity (Always visible)
-1. **Today** - Main dashboard showing overview of everything
-2. **Tasks** - Task management with priorities, due dates, subtasks
-3. **Habits** - Daily habit tracking with streaks
-
-#### Life Management (In "More" section)
+4. **More** - Access to other 12 mini-apps  
 4. **Goals** - Long-term goal setting and tracking
 5. **Projects** - Multi-task project management
 6. **Time Tracking** - Track time spent on activities

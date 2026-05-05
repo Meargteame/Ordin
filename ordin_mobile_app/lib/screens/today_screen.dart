@@ -95,78 +95,37 @@ class _TodayScreenState extends State<TodayScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: ThemeHelper.backgroundColor(context),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadData,
-              color: OrdinTheme.primary,
-              child: CustomScrollView(
-                physics: const BouncingScrollPhysics(),
-                slivers: [
-                  _buildAppBar(),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildDailySummary(),
-                          const SizedBox(height: 24),
-                          _buildStatsCards(),
-                          const SizedBox(height: 24),
-                          _buildCircularProgress(),
-                          const SizedBox(height: 24),
-                          _buildLifeAreasSection(),
-                          const SizedBox(height: 24),
-                          _buildTodaysFocus(),
-                          const SizedBox(height: 100),
-                        ],
-                      ),
+    return _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : RefreshIndicator(
+            onRefresh: _loadData,
+            color: OrdinTheme.primary,
+            child: CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildDailySummary(),
+                        const SizedBox(height: 24),
+                        _buildStatsCards(),
+                        const SizedBox(height: 24),
+                        _buildCircularProgress(),
+                        const SizedBox(height: 24),
+                        _buildLifeAreasSection(),
+                        const SizedBox(height: 24),
+                        _buildTodaysFocus(),
+                        const SizedBox(height: 100),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-    );
-  }
-
-  Widget _buildAppBar() {
-    return SliverAppBar(
-      floating: true,
-      backgroundColor: ThemeHelper.backgroundColor(context),
-      elevation: 0,
-      toolbarHeight: 70,
-      title: Row(
-        children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: OrdinTheme.primary.withOpacity(0.1),
-            child: const Icon(Icons.person, color: OrdinTheme.primary, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            'Good morning, Alex',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: ThemeHelper.textPrimary(context),
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        IconButton(
-          icon: Icon(Icons.calendar_today_outlined, color: ThemeHelper.textSecondary(context)),
-          onPressed: () {},
-        ),
-        IconButton(
-          icon: Icon(Icons.notifications_outlined, color: ThemeHelper.textSecondary(context)),
-          onPressed: () {},
-        ),
-      ],
-    );
+          );
   }
 
   Widget _buildDailySummary() {

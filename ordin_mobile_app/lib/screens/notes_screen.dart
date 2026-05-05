@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/note.dart';
 import '../data/notes_repository.dart';
 import '../data/hive_storage_service.dart';
+import '../theme/theme_helper.dart';
+import '../theme/ordin_theme.dart';
 
 class NotesScreen extends StatefulWidget {
   const NotesScreen({super.key});
@@ -39,25 +41,25 @@ class _NotesScreenState extends State<NotesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: ThemeHelper.backgroundColor(context),
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF8F9FA),
+        backgroundColor: ThemeHelper.backgroundColor(context),
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Notes',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1F2937),
+            color: ThemeHelper.textPrimary(context),
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1F2937)),
+          icon: Icon(Icons.arrow_back, color: ThemeHelper.textPrimary(context)),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search, color: Color(0xFF6B7280)),
+            icon: Icon(Icons.search, color: ThemeHelper.textSecondary(context)),
             onPressed: () {},
           ),
         ],
@@ -79,7 +81,7 @@ class _NotesScreenState extends State<NotesScreen> {
                 ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
-        backgroundColor: const Color(0xFF2563EB),
+        backgroundColor: OrdinTheme.primary,
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
@@ -88,26 +90,16 @@ class _NotesScreenState extends State<NotesScreen> {
   Widget _buildNoteCard(Note note) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: ThemeHelper.cardDecoration(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             note.title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF1F2937),
+              color: ThemeHelper.textPrimary(context),
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -116,9 +108,9 @@ class _NotesScreenState extends State<NotesScreen> {
           Expanded(
             child: Text(
               note.content,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
-                color: Color(0xFF6B7280),
+                color: ThemeHelper.textSecondary(context),
                 height: 1.4,
               ),
               maxLines: 6,
@@ -128,9 +120,9 @@ class _NotesScreenState extends State<NotesScreen> {
           const SizedBox(height: 8),
           Text(
             _formatDate(note.createdDate),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
-              color: Color(0xFF9CA3AF),
+              color: ThemeHelper.textTertiary(context),
             ),
           ),
         ],
@@ -155,22 +147,22 @@ class _NotesScreenState extends State<NotesScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.note_outlined, size: 80, color: Colors.grey[300]),
+            Icon(Icons.note_outlined, size: 80, color: ThemeHelper.borderColor(context)),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'No notes yet',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF6B7280),
+                color: ThemeHelper.textSecondary(context),
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Capture your ideas and thoughts',
               style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF9CA3AF),
+                color: ThemeHelper.textTertiary(context),
               ),
               textAlign: TextAlign.center,
             ),

@@ -55,6 +55,13 @@ dependencies:
   
   # State management (optional)
   provider: ^6.1.2
+  
+  # Charts & Progress Visualization (for Goals)
+  fl_chart: ^0.68.0
+  percent_indicator: ^4.2.1
+  
+  # Timeline & Milestones
+  timeline_tile: ^2.0.0
 
 dev_dependencies:
   flutter_test:

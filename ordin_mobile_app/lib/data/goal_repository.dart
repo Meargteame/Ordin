@@ -17,7 +17,108 @@ class GoalRepository {
   }
 
   Future<List<Goal>> loadGoals() async {
-    return _goalsBox.values.toList();
+    final goals = _goalsBox.values.toList();
+    
+    // Add sample data if no goals exist
+    if (goals.isEmpty) {
+      await _addSampleGoals();
+      return _goalsBox.values.toList();
+    }
+    
+    return goals;
+  }
+
+  Future<void> _addSampleGoals() async {
+    final sampleGoals = [
+      Goal(
+        id: 'goal-1',
+        title: 'Complete Flutter Certification',
+        description: 'Master Flutter development and get certified to advance my career in mobile development.',
+        category: GoalCategory.career,
+        status: GoalStatus.active,
+        priority: Priority.high,
+        deadline: DateTime.now().add(const Duration(days: 90)),
+        successMetrics: 'Pass certification exam with 85% or higher',
+        progress: 0.65,
+        linkedTaskIds: [],
+        linkedProjectIds: [],
+        createdDate: DateTime.now().subtract(const Duration(days: 30)),
+      ),
+      Goal(
+        id: 'goal-2',
+        title: 'Run 5K Marathon',
+        description: 'Build endurance and complete a 5K marathon to improve my overall fitness and health.',
+        category: GoalCategory.health,
+        status: GoalStatus.active,
+        priority: Priority.medium,
+        deadline: DateTime.now().add(const Duration(days: 60)),
+        successMetrics: 'Complete 5K run in under 30 minutes',
+        progress: 0.40,
+        linkedTaskIds: [],
+        linkedProjectIds: [],
+        createdDate: DateTime.now().subtract(const Duration(days: 20)),
+      ),
+      Goal(
+        id: 'goal-3',
+        title: 'Save \$10,000 Emergency Fund',
+        description: 'Build a solid financial foundation by saving money for unexpected expenses.',
+        category: GoalCategory.finance,
+        status: GoalStatus.active,
+        priority: Priority.high,
+        deadline: DateTime.now().add(const Duration(days: 365)),
+        successMetrics: 'Reach \$10,000 in savings account',
+        progress: 0.30,
+        linkedTaskIds: [],
+        linkedProjectIds: [],
+        createdDate: DateTime.now().subtract(const Duration(days: 45)),
+      ),
+      Goal(
+        id: 'goal-4',
+        title: 'Learn Spanish Conversational Level',
+        description: 'Achieve conversational fluency in Spanish to enhance personal growth and career opportunities.',
+        category: GoalCategory.learning,
+        status: GoalStatus.active,
+        priority: Priority.medium,
+        deadline: DateTime.now().add(const Duration(days: 180)),
+        successMetrics: 'Hold 30-minute conversation in Spanish',
+        progress: 0.25,
+        linkedTaskIds: [],
+        linkedProjectIds: [],
+        createdDate: DateTime.now().subtract(const Duration(days: 15)),
+      ),
+      Goal(
+        id: 'goal-5',
+        title: 'Strengthen Family Relationships',
+        description: 'Spend more quality time with family and improve communication.',
+        category: GoalCategory.relationships,
+        status: GoalStatus.active,
+        priority: Priority.high,
+        deadline: null,
+        successMetrics: 'Weekly family activities and monthly check-ins',
+        progress: 0.55,
+        linkedTaskIds: [],
+        linkedProjectIds: [],
+        createdDate: DateTime.now().subtract(const Duration(days: 10)),
+      ),
+      Goal(
+        id: 'goal-6',
+        title: 'Complete Meditation Challenge',
+        description: 'Develop a consistent meditation practice for mental clarity and stress reduction.',
+        category: GoalCategory.personalGrowth,
+        status: GoalStatus.completed,
+        priority: Priority.medium,
+        deadline: DateTime.now().subtract(const Duration(days: 5)),
+        successMetrics: 'Meditate for 30 days straight, 10 minutes daily',
+        progress: 1.0,
+        linkedTaskIds: [],
+        linkedProjectIds: [],
+        createdDate: DateTime.now().subtract(const Duration(days: 35)),
+      ),
+    ];
+
+    for (final goal in sampleGoals) {
+      await saveGoal(goal);
+    }
   }
 
   Future<void> saveGoal(Goal goal) async {

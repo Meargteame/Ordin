@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../theme/theme_helper.dart';
+import '../theme/ordin_theme.dart';
 
 class HealthScreen extends StatelessWidget {
   const HealthScreen({super.key});
@@ -6,20 +8,20 @@ class HealthScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: ThemeHelper.backgroundColor(context),
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF8F9FA),
+        backgroundColor: ThemeHelper.backgroundColor(context),
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Health',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1F2937),
+            color: ThemeHelper.textPrimary(context),
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1F2937)),
+          icon: Icon(Icons.arrow_back, color: ThemeHelper.textPrimary(context)),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -29,22 +31,22 @@ class HealthScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.favorite_outline, size: 80, color: Colors.grey[300]),
+              Icon(Icons.favorite_outline, size: 80, color: ThemeHelper.borderColor(context)),
               const SizedBox(height: 24),
-              const Text(
+              Text(
                 'Health',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF6B7280),
+                  color: ThemeHelper.textSecondary(context),
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Track fitness, diet, and sleep',
                 style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF9CA3AF),
+                  color: ThemeHelper.textTertiary(context),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -54,7 +56,7 @@ class HealthScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
-        backgroundColor: const Color(0xFF2563EB),
+        backgroundColor: OrdinTheme.primary,
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );

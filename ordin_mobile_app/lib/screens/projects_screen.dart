@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../models/project.dart';
 import '../data/project_repository.dart';
 import '../data/hive_storage_service.dart';
+import '../theme/theme_helper.dart';
+import '../theme/ordin_theme.dart';
+import 'project_form_screen.dart';
 
 class ProjectsScreen extends StatefulWidget {
   const ProjectsScreen({super.key});
@@ -40,20 +43,20 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: ThemeHelper.backgroundColor(context),
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF8F9FA),
+        backgroundColor: ThemeHelper.backgroundColor(context),
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Projects',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1F2937),
+            color: ThemeHelper.textPrimary(context),
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1F2937)),
+          icon: Icon(Icons.arrow_back, color: ThemeHelper.textPrimary(context)),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -67,31 +70,33 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                   itemBuilder: (context, index) => _buildProjectCard(_projects[index]),
                 ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: const Color(0xFF2563EB),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProjectFormScreen(
+                onSave: (newProject) async {
+                  await _projectRepo.saveProject(newProject);
+                  await _loadProjects();
+                },
+              ),
+              fullscreenDialog: true,
+            ),
+          );
+        },
+        backgroundColor: OrdinTheme.primary,
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
 
   Widget _buildProjectCard(Project project) {
-    // Simplified - just show progress
     final progress = project.progress;
     
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: ThemeHelper.cardDecoration(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -112,19 +117,19 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                   children: [
                     Text(
                       project.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF1F2937),
+                        color: ThemeHelper.textPrimary(context),
                       ),
                     ),
                     if (project.description != null) ...[
                       const SizedBox(height: 4),
                       Text(
                         project.description!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          color: Color(0xFF6B7280),
+                          color: ThemeHelper.textSecondary(context),
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -148,17 +153,17 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                       children: [
                         Text(
                           '${(progress * 100).toInt()}% complete',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF6B7280),
+                            color: ThemeHelper.textSecondary(context),
                           ),
                         ),
                         Text(
                           '${(progress * 100).toInt()}%',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF2563EB),
+                            color: OrdinTheme.primary,
                           ),
                         ),
                       ],
@@ -168,8 +173,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                       borderRadius: BorderRadius.circular(4),
                       child: LinearProgressIndicator(
                         value: progress,
-                        backgroundColor: const Color(0xFFE5E7EB),
-                        valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
+                        backgroundColor: ThemeHelper.borderColor(context),
+                        valueColor: const AlwaysStoppedAnimation<Color>(OrdinTheme.primary),
                         minHeight: 6,
                       ),
                     ),
@@ -234,22 +239,22 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.folder_outlined, size: 80, color: Colors.grey[300]),
+            Icon(Icons.folder_outlined, size: 80, color: ThemeHelper.borderColor(context)),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'No projects yet',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF6B7280),
+                color: ThemeHelper.textSecondary(context),
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Create your first project to organize tasks',
               style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF9CA3AF),
+                color: ThemeHelper.textTertiary(context),
               ),
               textAlign: TextAlign.center,
             ),

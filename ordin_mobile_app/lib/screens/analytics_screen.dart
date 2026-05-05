@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../theme/theme_helper.dart';
+import '../theme/ordin_theme.dart';
 
 class AnalyticsScreen extends StatelessWidget {
   const AnalyticsScreen({super.key});
@@ -6,25 +8,25 @@ class AnalyticsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: ThemeHelper.backgroundColor(context),
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF8F9FA),
+        backgroundColor: ThemeHelper.backgroundColor(context),
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Analytics',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1F2937),
+            color: ThemeHelper.textPrimary(context),
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1F2937)),
+          icon: Icon(Icons.arrow_back, color: ThemeHelper.textPrimary(context)),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.filter_list, color: Color(0xFF6B7280)),
+            icon: Icon(Icons.filter_list, color: ThemeHelper.textSecondary(context)),
             onPressed: () {},
           ),
         ],
@@ -35,22 +37,22 @@ class AnalyticsScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.insights_outlined, size: 80, color: Colors.grey[300]),
+              Icon(Icons.insights_outlined, size: 80, color: ThemeHelper.borderColor(context)),
               const SizedBox(height: 24),
-              const Text(
+              Text(
                 'Analytics',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF6B7280),
+                  color: ThemeHelper.textSecondary(context),
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Visualize and analyze your performance',
                 style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF9CA3AF),
+                  color: ThemeHelper.textTertiary(context),
                 ),
                 textAlign: TextAlign.center,
               ),

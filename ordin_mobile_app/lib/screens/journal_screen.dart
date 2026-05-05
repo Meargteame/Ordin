@@ -4,8 +4,8 @@ import 'package:intl/intl.dart';
 import '../models/journal_entry.dart';
 import '../data/notes_repository.dart';
 import '../data/hive_storage_service.dart';
-import '../theme/app_theme.dart';
-import '../widgets/gradient_app_bar.dart';
+import '../theme/theme_helper.dart';
+import '../theme/ordin_theme.dart';
 
 class JournalScreen extends StatefulWidget {
   const JournalScreen({super.key});
@@ -61,13 +61,14 @@ class _JournalScreenState extends State<JournalScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: Text('Journal Entry', style: AppTheme.headingLarge),
+          backgroundColor: ThemeHelper.cardColor(context),
+          title: Text('Journal Entry', style: TextStyle(color: ThemeHelper.textPrimary(context), fontSize: 20, fontWeight: FontWeight.bold)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('How are you feeling?', style: AppTheme.labelLarge),
+                Text('How are you feeling?', style: TextStyle(color: ThemeHelper.textPrimary(context), fontSize: 16)),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -90,38 +91,38 @@ class _JournalScreenState extends State<JournalScreen> {
                   ],
                 ),
                 const SizedBox(height: 24),
-                Text('What happened today?', style: AppTheme.labelLarge),
+                Text('What happened today?', style: TextStyle(color: ThemeHelper.textPrimary(context), fontSize: 16)),
                 const SizedBox(height: 12),
                 TextField(
                   controller: contentController,
-                  style: AppTheme.bodyLarge,
+                  style: TextStyle(color: ThemeHelper.textPrimary(context)),
                   maxLines: 6,
                   decoration: InputDecoration(
                     hintText: 'Write about your day...',
-                    hintStyle: AppTheme.bodyMedium,
+                    hintStyle: TextStyle(color: ThemeHelper.textTertiary(context)),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 2),
+                      borderSide: BorderSide(color: OrdinTheme.primary, width: 2),
                     ),
                   ),
                 ),
                 const SizedBox(height: 24),
-                Text('What are you grateful for?', style: AppTheme.labelLarge),
+                Text('What are you grateful for?', style: TextStyle(color: ThemeHelper.textPrimary(context), fontSize: 16)),
                 const SizedBox(height: 12),
                 ...List.generate(3, (i) {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: TextField(
                       controller: gratitudeControllers[i],
-                      style: AppTheme.bodyLarge,
+                      style: TextStyle(color: ThemeHelper.textPrimary(context)),
                       decoration: InputDecoration(
                         labelText: '${i + 1}.',
-                        labelStyle: AppTheme.labelMedium,
+                        labelStyle: TextStyle(color: ThemeHelper.textSecondary(context)),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 2),
+                          borderSide: BorderSide(color: OrdinTheme.primary, width: 2),
                         ),
                       ),
                     ),
@@ -133,15 +134,15 @@ class _JournalScreenState extends State<JournalScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: Text('Cancel', style: AppTheme.labelLarge.copyWith(color: AppTheme.textSecondary)),
+              child: Text('Cancel', style: TextStyle(color: ThemeHelper.textSecondary(context))),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
               style: FilledButton.styleFrom(
-                backgroundColor: AppTheme.infoBlue,
+                backgroundColor: OrdinTheme.primary,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
-              child: Text('Save', style: AppTheme.labelLarge.copyWith(color: Colors.white)),
+              child: const Text('Save', style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -181,10 +182,10 @@ class _JournalScreenState extends State<JournalScreen> {
         width: 50,
         height: 50,
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryBlue.withOpacity(0.1) : Colors.transparent,
+          color: isSelected ? OrdinTheme.primary.withOpacity(0.1) : Colors.transparent,
           shape: BoxShape.circle,
           border: Border.all(
-            color: isSelected ? AppTheme.primaryBlue : AppTheme.borderGray,
+            color: isSelected ? OrdinTheme.primary : ThemeHelper.borderColor(context),
             width: 2,
           ),
         ),
@@ -198,185 +199,152 @@ class _JournalScreenState extends State<JournalScreen> {
   void _changeDate(int days) {
     setState(() {
       _selectedDate = _selectedDate.add(Duration(days: days));
+      _isLoading = true;
     });
     _loadData();
   }
 
-  String _getMoodEmoji(Mood? mood) {
-    if (mood == null) return '😐';
-    switch (mood) {
-      case Mood.great:
-        return '😄';
-      case Mood.good:
-        return '🙂';
-      case Mood.neutral:
-        return '😐';
-      case Mood.bad:
-        return '😟';
-      case Mood.terrible:
-        return '😢';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final isToday = _selectedDate.year == DateTime.now().year &&
-        _selectedDate.month == DateTime.now().month &&
-        _selectedDate.day == DateTime.now().day;
-
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: GradientAppBar(
-        title: 'Journal',
+      backgroundColor: ThemeHelper.backgroundColor(context),
+      appBar: AppBar(
+        backgroundColor: ThemeHelper.backgroundColor(context),
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: ThemeHelper.textPrimary(context)),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Journal',
+          style: TextStyle(color: ThemeHelper.textPrimary(context), fontSize: 20, fontWeight: FontWeight.bold),
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
+          : SingleChildScrollView(
               padding: const EdgeInsets.all(20),
-              children: [
-                _buildDateSelector(isToday),
-                const SizedBox(height: 24),
-                _todayEntry != null ? _buildEntryCard() : _buildEmptyEntry(),
-                const SizedBox(height: 32),
-                if (_recentEntries.isNotEmpty) ...[
-                  Text('Recent Entries', style: AppTheme.headingLarge),
-                  const SizedBox(height: 16),
-                  ..._recentEntries.where((e) => !_isSameDay(e.date, _selectedDate)).map((entry) {
-                    return _buildRecentEntryCard(entry);
-                  }),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildDateHeader(),
+                  const SizedBox(height: 24),
+                  if (_todayEntry != null) _buildEntryView() else _buildEmptyState(),
+                  const SizedBox(height: 32),
+                  if (_recentEntries.isNotEmpty) ...[
+                    Text('Recent Entries', style: TextStyle(color: ThemeHelper.textPrimary(context), fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    ..._recentEntries.map((e) => _buildRecentEntryCard(e)),
+                  ],
                 ],
-              ],
+              ),
             ),
       floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'journal_fab',
         onPressed: _editEntry,
-        backgroundColor: AppTheme.infoBlue,
-        icon: Icon(_todayEntry == null ? Icons.add_rounded : Icons.edit_rounded, color: Colors.white),
-        label: Text(
-          _todayEntry == null ? 'Write Entry' : 'Edit Entry',
-          style: AppTheme.labelLarge.copyWith(color: Colors.white),
-        ),
+        backgroundColor: OrdinTheme.primary,
+        icon: Icon(_todayEntry != null ? Icons.edit : Icons.edit_document, color: Colors.white),
+        label: Text(_todayEntry != null ? 'Edit' : 'Write', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
     );
   }
 
-  Widget _buildDateSelector(bool isToday) {
+  Widget _buildDateHeader() {
+    final isToday = DateTime.now().difference(_selectedDate).inDays == 0 && DateTime.now().day == _selectedDate.day;
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceWhite,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.borderGray),
-      ),
+      padding: const EdgeInsets.all(16),
+      decoration: ThemeHelper.cardDecoration(context),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
+            icon: Icon(Icons.chevron_left, color: ThemeHelper.textPrimary(context)),
             onPressed: () => _changeDate(-1),
-            icon: const Icon(Icons.chevron_left_rounded),
-            style: IconButton.styleFrom(
-              backgroundColor: AppTheme.backgroundColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
           ),
-          Expanded(
-            child: Column(
-              children: [
-                Text(DateFormat('EEEE').format(_selectedDate), style: AppTheme.labelLarge),
-                const SizedBox(height: 4),
-                Text(DateFormat('MMMM d, yyyy').format(_selectedDate), style: AppTheme.headingLarge),
-                if (isToday) ...[
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppTheme.infoBlue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text('Today', style: AppTheme.labelMedium.copyWith(color: AppTheme.infoBlue)),
+          Column(
+            children: [
+              Text(DateFormat('EEEE').format(_selectedDate), style: TextStyle(color: ThemeHelper.textSecondary(context), fontSize: 14)),
+              const SizedBox(height: 4),
+              Text(DateFormat('MMMM d, yyyy').format(_selectedDate), style: TextStyle(color: ThemeHelper.textPrimary(context), fontSize: 18, fontWeight: FontWeight.bold)),
+              if (isToday) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: OrdinTheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                ],
+                  child: Text('Today', style: TextStyle(color: OrdinTheme.primary, fontSize: 12, fontWeight: FontWeight.bold)),
+                ),
               ],
-            ),
+            ],
           ),
           IconButton(
-            onPressed: () => _changeDate(1),
-            icon: const Icon(Icons.chevron_right_rounded),
-            style: IconButton.styleFrom(
-              backgroundColor: AppTheme.backgroundColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
+            icon: Icon(Icons.chevron_right, color: isToday ? ThemeHelper.borderColor(context) : ThemeHelper.textPrimary(context)),
+            onPressed: isToday ? null : () => _changeDate(1),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEntryCard() {
+  Widget _buildEntryView() {
     return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceWhite,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.borderGray),
-      ),
+      padding: const EdgeInsets.all(20),
+      decoration: ThemeHelper.cardDecoration(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text(_getMoodEmoji(_todayEntry!.mood), style: const TextStyle(fontSize: 40)),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text('Your Day', style: AppTheme.headingLarge),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Text(_todayEntry!.content, style: AppTheme.bodyLarge),
+          if (_todayEntry!.mood != null) ...[
+            Row(
+              children: [
+                const Text('Feeling: ', style: TextStyle(color: Colors.grey)),
+                Text(_getMoodEmoji(_todayEntry!.mood!), style: const TextStyle(fontSize: 20)),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+          Text('Your Day', style: TextStyle(color: ThemeHelper.textPrimary(context), fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Text(_todayEntry!.content, style: TextStyle(color: ThemeHelper.textSecondary(context), fontSize: 16)),
+          const SizedBox(height: 24),
           if (_todayEntry!.gratitudeItems.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            Text('Grateful For', style: AppTheme.headingMedium),
-            const SizedBox(height: 12),
-            ..._todayEntry!.gratitudeItems.map((item) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('• ', style: TextStyle(fontSize: 20, color: AppTheme.successGreen)),
-                    Expanded(child: Text(item, style: AppTheme.bodyMedium)),
-                  ],
-                ),
-              );
-            }),
+            Text('Grateful For', style: TextStyle(color: ThemeHelper.textPrimary(context), fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            ..._todayEntry!.gratitudeItems.map((item) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('• ', style: TextStyle(fontSize: 20, color: OrdinTheme.success)),
+                      Expanded(child: Text(item, style: TextStyle(color: ThemeHelper.textSecondary(context), fontSize: 14))),
+                    ],
+                  ),
+                )),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildEmptyEntry() {
+  Widget _buildEmptyState() {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(40),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceWhite,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.borderGray),
-      ),
+      decoration: ThemeHelper.cardDecoration(context),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppTheme.infoBlue.withOpacity(0.08),
+              color: OrdinTheme.primary.withOpacity(0.08),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.book_rounded, size: 48, color: AppTheme.infoBlue.withOpacity(0.6)),
+            child: Icon(Icons.book_rounded, size: 48, color: OrdinTheme.primary.withOpacity(0.6)),
           ),
-          const SizedBox(height: 20),
-          Text('No entry for this day', style: AppTheme.headingMedium),
+          const SizedBox(height: 24),
+          Text('No entry for this day', style: TextStyle(color: ThemeHelper.textPrimary(context), fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          Text('Tap the button below to write', style: AppTheme.bodyMedium),
+          Text('Tap the button below to write', style: TextStyle(color: ThemeHelper.textSecondary(context), fontSize: 14)),
         ],
       ),
     );
@@ -386,27 +354,23 @@ class _JournalScreenState extends State<JournalScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceWhite,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.borderGray),
-      ),
+      decoration: ThemeHelper.cardDecoration(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(_getMoodEmoji(entry.mood), style: const TextStyle(fontSize: 28)),
-              const SizedBox(width: 12),
               Expanded(
-                child: Text(DateFormat('EEEE, MMM d').format(entry.date), style: AppTheme.headingMedium),
+                child: Text(DateFormat('EEEE, MMM d').format(entry.date), style: TextStyle(color: ThemeHelper.textPrimary(context), fontSize: 16, fontWeight: FontWeight.bold)),
               ),
+              if (entry.mood != null) Text(_getMoodEmoji(entry.mood!), style: const TextStyle(fontSize: 20)),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Text(
             entry.content,
-            style: AppTheme.bodyMedium,
+            style: TextStyle(color: ThemeHelper.textSecondary(context), fontSize: 14),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -415,7 +379,13 @@ class _JournalScreenState extends State<JournalScreen> {
     );
   }
 
-  bool _isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
+  String _getMoodEmoji(Mood mood) {
+    switch (mood) {
+      case Mood.great: return '😄';
+      case Mood.good: return '🙂';
+      case Mood.neutral: return '😐';
+      case Mood.bad: return '😟';
+      case Mood.terrible: return '😢';
+    }
   }
 }
